@@ -1,0 +1,42 @@
+name: Feature request
+description: Đề xuất tính năng hoặc cải tiến cho trang tuyển dụng Fusumi
+title: "[Feature] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Nhu cầu
+      description: Vấn đề hoặc nhu cầu thực tế cần giải quyết là gì?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Giải pháp đề xuất
+      description: Mô tả hành vi hoặc kết quả mong muốn.
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Mức ưu tiên
+      options:
+        - P0 - Khẩn cấp
+        - P1 - Cao
+        - P2 - Trung bình
+        - P3 - Thấp
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Tiêu chí hoàn thành
+      placeholder: |
+        - [ ] Điều kiện 1
+        - [ ] Điều kiện 2
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Ghi chú thêm
