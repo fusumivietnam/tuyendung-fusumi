@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Blogger theme XML
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          path = Path('blogger/fusumi-careers-theme.xml')
+          if not path.exists():
+              raise SystemExit('Missing Blogger theme')
+          ET.parse(path)
+          print('Theme XML validation passed.')
+          PY
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            blogger/fusumi-careers-theme.xml \
+            --title "Fusumi Careers ${GITHUB_REF_NAME}" \
+            --generate-notes
