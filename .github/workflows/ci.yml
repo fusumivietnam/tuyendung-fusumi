@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-theme:
+    name: validate-theme
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Blogger theme XML
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          path = Path('blogger/fusumi-careers-theme.xml')
+          if not path.exists():
+              raise SystemExit('Missing blogger/fusumi-careers-theme.xml')
+
+          text = path.read_text(encoding='utf-8')
+          if any(marker in text for marker in ('<<<<<<<', '=======', '>>>>>>>')):
+              raise SystemExit('Merge conflict marker found in theme')
+
+          required = [
+              "xmlns:b='http://www.google.com/2005/gml/b'",
+              "xmlns:data='http://www.google.com/2005/gml/data'",
+              "xmlns:expr='http://www.google.com/2005/gml/expr'",
+              '<b:skin>',
+              'JobPosting',
+              "PB:",
+              "ĐĐ:",
+              "HT:",
+          ]
+          missing = [item for item in required if item not in text]
+          if missing:
+              raise SystemExit('Missing required theme markers: ' + ', '.join(missing))
+
+          ET.parse(path)
+          print('Theme XML validation passed.')
+          PY
+
+      - name: Validate repository files
+        shell: bash
+        run: |
+          test -f README.md
+          test -f docs/cai-dat-blogger.md
+          test -f templates/mau-tin-tuyen-dung.md
+          ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
+
+      - name: Upload validated theme artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fusumi-careers-theme
+          path: blogger/fusumi-careers-theme.xml
+          if-no-files-found: error
