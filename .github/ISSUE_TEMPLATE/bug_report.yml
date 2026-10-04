@@ -1,0 +1,55 @@
+name: Bug report
+description: Báo lỗi theme tuyển dụng Fusumi
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: Cảm ơn bạn đã báo lỗi. Vui lòng cung cấp đủ thông tin để có thể tái hiện.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Mô tả lỗi
+      description: Lỗi xảy ra ở đâu và ảnh hưởng thế nào?
+      placeholder: Mô tả ngắn gọn nhưng đủ chi tiết.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Các bước tái hiện
+      placeholder: |
+        1. Mở ...
+        2. Chọn ...
+        3. Lỗi xuất hiện ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Khu vực
+      options:
+        - Blogger theme
+        - Trang chủ
+        - Tin tuyển dụng
+        - Trang tĩnh
+        - Bộ lọc job
+        - SEO / Schema
+        - GitHub Actions
+        - Khác
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Môi trường
+      description: Thiết bị, trình duyệt, URL Blogger/test nếu có.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Ảnh chụp / log / thông tin bổ sung
