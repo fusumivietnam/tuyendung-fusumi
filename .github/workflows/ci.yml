@@ -17,38 +17,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate Blogger theme XML
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import xml.etree.ElementTree as ET
-
-          path = Path('blogger/fusumi-careers-theme.xml')
-          if not path.exists():
-              raise SystemExit('Missing blogger/fusumi-careers-theme.xml')
-
-          text = path.read_text(encoding='utf-8')
-          if any(marker in text for marker in ('<<<<<<<', '=======', '>>>>>>>')):
-              raise SystemExit('Merge conflict marker found in theme')
-
-          required = [
-              "xmlns:b='http://www.google.com/2005/gml/b'",
-              "xmlns:data='http://www.google.com/2005/gml/data'",
-              "xmlns:expr='http://www.google.com/2005/gml/expr'",
-              '<b:skin>',
-              'JobPosting',
-              "PB:",
-              "ĐĐ:",
-              "HT:",
-          ]
-          missing = [item for item in required if item not in text]
-          if missing:
-              raise SystemExit('Missing required theme markers: ' + ', '.join(missing))
-
-          ET.parse(path)
-          print('Theme XML validation passed.')
-          PY
+      - name: Validate Blogger theme
+        run: python scripts/validate_theme.py
 
       - name: Validate repository files
         shell: bash
@@ -56,7 +26,12 @@ jobs:
           test -f README.md
           test -f docs/cai-dat-blogger.md
           test -f templates/mau-tin-tuyen-dung.md
+          test -f scripts/validate_theme.py
+          test -f scripts/check_live_site.py
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
+
+      - name: Compile Python scripts
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py
 
       - name: Upload validated theme artifact
         uses: actions/upload-artifact@v4
