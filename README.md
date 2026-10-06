@@ -10,6 +10,7 @@ blogger/
 
 docs/
   cai-dat-blogger.md            Hướng dẫn cài đặt và cấu hình
+  github-workflow.md            Quy trình branch / PR / CI / release
 
 templates/
   mau-tin-tuyen-dung.md         Mẫu nội dung job cho HR
@@ -27,6 +28,25 @@ templates/
 - `noindex,follow` cho trang tìm kiếm.
 - Schema.org `JobPosting` dạng microdata ở trang job.
 - Có thể nhúng Google Form để nhận CV và lưu vào Google Sheets.
+
+## Quy trình phát triển
+
+Mọi thay đổi mới nên đi theo luồng:
+
+```text
+Issue → Branch → Pull Request → CI validate-theme → Review → Merge → Tag → Release
+```
+
+Quy ước branch:
+
+- `feature/...` cho tính năng mới.
+- `fix/...` cho sửa lỗi.
+- `docs/...` cho tài liệu.
+- `chore/...` cho công việc kỹ thuật/vận hành.
+
+GitHub Actions chạy tự động trên Pull Request và push vào `main`. Job bắt buộc là `validate-theme`, kiểm tra XML Blogger, các marker bắt buộc, conflict marker và upload theme XML thành artifact.
+
+Chi tiết quy trình xem `docs/github-workflow.md`.
 
 ## Quy ước Labels
 
@@ -58,12 +78,19 @@ Theme đã có nền tảng production nhưng vẫn cần kiểm thử trực ti
 - [x] Bộ lọc phòng ban / địa điểm / hình thức.
 - [x] SEO / Open Graph cơ bản.
 - [x] Schema.org `JobPosting` cơ bản.
+- [x] Issue templates / PR template / CI / release workflow.
+- [ ] Bật branch protection cho `main`.
+- [ ] Tạo GitHub Project `Fusumi Careers Roadmap`.
 - [ ] Thay logo và màu nhận diện Fusumi chính thức.
 - [ ] Bổ sung JobPosting properties từ dữ liệu tuyển dụng thực tế.
 - [ ] Hoàn thiện Google Form + Google Sheets.
 - [ ] Thêm GA4 và Google Search Console.
 - [ ] Kiểm thử theme trực tiếp trên Blogger.
 - [ ] Trỏ domain chính thức.
+
+## Release
+
+Sau khi bản trên `main` đã kiểm thử trên Blogger, tạo tag theo semantic versioning, ví dụ `v0.1.0`. Workflow release sẽ tự validate và tạo GitHub Release kèm `fusumi-careers-theme.xml`.
 
 ## License
 
