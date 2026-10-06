@@ -46,6 +46,12 @@ jobs:
           if missing:
               raise SystemExit('Missing required theme markers: ' + ', '.join(missing))
 
+          if text.count("type='Blog'") != 1:
+              raise SystemExit('Theme must contain exactly one Blogger Blog widget')
+
+          if text.count('<b:section') != 1:
+              raise SystemExit('Theme must contain exactly one Blogger layout section')
+
           ET.parse(path)
           print('Theme XML validation passed.')
           PY
