@@ -16,37 +16,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate Blogger theme XML
+      - name: Validate Blogger theme
+        run: python scripts/validate_theme.py
+
+      - name: Build release checksum
         shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import xml.etree.ElementTree as ET
-
-          path = Path('blogger/fusumi-careers-theme.xml')
-          if not path.exists():
-              raise SystemExit('Missing Blogger theme')
-
-          text = path.read_text(encoding='utf-8')
-          if any(marker in text for marker in ('<<<<<<<', '=======', '>>>>>>>')):
-              raise SystemExit('Merge conflict marker found in theme')
-
-          ET.parse(path)
-          print('Theme XML validation passed.')
-          PY
+        run: sha256sum blogger/fusumi-careers-theme.xml > blogger/fusumi-careers-theme.xml.sha256
 
       - name: Package validated theme
         uses: actions/upload-artifact@v4
         with:
           name: fusumi-careers-release-candidate
-          path: blogger/fusumi-careers-theme.xml
+          path: |
+            blogger/fusumi-careers-theme.xml
+            blogger/fusumi-careers-theme.xml.sha256
           if-no-files-found: error
 
       - name: Dry-run summary
         if: github.event_name == 'workflow_dispatch'
         run: |
           echo 'Release dry-run passed.' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Theme XML was validated and packaged as an Actions artifact.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Theme XML was validated and packaged with SHA-256 checksum.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No GitHub Release was created because this run was started manually.' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create GitHub Release
@@ -56,5 +46,6 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             blogger/fusumi-careers-theme.xml \
+            blogger/fusumi-careers-theme.xml.sha256 \
             --title "Fusumi Careers ${GITHUB_REF_NAME}" \
             --generate-notes
