@@ -61,11 +61,11 @@
   <script type='text/javascript'>
   //<![CDATA[
   (function(){
-    var q=document.getElementById('jobSearch'),d=document.getElementById('departmentFilter'),l=document.getElementById('locationFilter'),t=document.getElementById('typeFilter'),clear=document.getElementById('clearFilters'),count=document.getElementById('jobCount'),empty=document.getElementById('jobsEmpty'),jobs=[].slice.call(document.querySelectorAll('.job'));
-    if(!jobs.length)return;
+    var q=document.getElementById('jobSearch'),d=document.getElementById('departmentFilter'),l=document.getElementById('locationFilter'),t=document.getElementById('typeFilter'),clear=document.getElementById('clearFilters'),count=document.getElementById('jobCount'),empty=document.getElementById('jobsEmpty'),jobs=[].slice.call(document.querySelectorAll('.job')),chips=[].slice.call(document.querySelectorAll('.chip'));
     var P={d:'PB:',l:'ĐĐ:',t:'HT:'},prefixes=[P.d,P.l,P.t];
     function norm(v){return(v||'').toLocaleLowerCase('vi').trim()}
-    jobs.forEach(function(job){job.querySelectorAll('.chip').forEach(function(c){var raw=(c.textContent||'').trim();c.setAttribute('data-raw',raw);prefixes.some(function(prefix){if(raw.indexOf(prefix)===0){c.textContent=raw.slice(prefix.length).trim();return true}return false})})});
+    chips.forEach(function(c){var raw=(c.textContent||'').trim();c.setAttribute('data-raw',raw);prefixes.some(function(prefix){if(raw.indexOf(prefix)===0){c.textContent=raw.slice(prefix.length).trim();return true}return false})});
+    if(!jobs.length)return;
     if(!q||!d||!l||!t||!clear||!count||!empty)return;
     function add(select,values){Object.keys(values).sort(function(a,b){return a.localeCompare(b,'vi')}).forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;select.appendChild(o)})}
     function group(prefix){var out={};jobs.forEach(function(job){job.querySelectorAll('.chip').forEach(function(c){var raw=c.getAttribute('data-raw')||'';if(raw.indexOf(prefix)===0){var v=raw.slice(prefix.length).trim();if(v)out[v]=1}})});return out}
