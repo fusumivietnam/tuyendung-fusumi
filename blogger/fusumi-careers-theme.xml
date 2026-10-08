@@ -31,7 +31,7 @@
     body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
     a{color:inherit;text-decoration:none}
     img{max-width:100%;height:auto}
-    .container{width:min(calc(100% - 32px),var(--max));margin:auto}
+    .container{width:calc(100% - 32px);max-width:$(content.width);margin-left:auto;margin-right:auto}
 
     .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
     .header-row{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
@@ -87,7 +87,7 @@
     .job-more{margin-top:auto;color:var(--brand);font-weight:900}
     .empty{display:none;padding:34px;margin-top:20px;text-align:center;color:var(--muted);background:#fff;border:1px dashed #cbd5e1;border-radius:var(--r)}
 
-    .content{width:min(calc(100% - 32px),880px);margin:48px auto;padding:36px;background:#fff;border:1px solid var(--line);border-radius:24px}
+    .content{width:calc(100% - 32px);max-width:880px;margin:48px auto;padding:36px;background:#fff;border:1px solid var(--line);border-radius:24px}
     .content h1{margin:0 0 14px;font-size:38px;line-height:1.15}
     .post-body h2,.post-body h3{margin-top:28px}
     .post-body img{border-radius:12px}
@@ -100,7 +100,7 @@
     .cta h2{margin:0 0 7px;font-size:31px}.cta p{margin:0;color:#ccfbf1}.cta .btn{background:#fff;color:var(--brand2)}
 
     .site-footer{margin-top:70px;background:#0f172a;color:#cbd5e1}
-    #footer{width:min(calc(100% - 32px),var(--max));margin:auto;padding:34px 0}
+    #footer{width:calc(100% - 32px);max-width:$(content.width);margin-left:auto;margin-right:auto;padding:34px 0}
     #footer .widget{margin:0 0 16px}
     #footer a{color:#fff}
 
@@ -185,7 +185,7 @@
                   <b:if cond='data:view.isHomepage'><a class='btn light' href='/search'>Xem tất cả</a></b:if>
                 </div>
                 <div class='toolbar'>
-                  <div class='job-search'><span aria-hidden='true'>⌕</span><input aria-label='Tìm vị trí tuyển dụng' id='jobSearch' placeholder='Tìm tên vị trí, kỹ năng...' type='search'/></div>
+                  <div class='job-search'><span aria-hidden='true'>&#8981;</span><input aria-label='Tìm vị trí tuyển dụng' id='jobSearch' placeholder='Tìm tên vị trí, kỹ năng...' type='search'/></div>
                   <select aria-label='Phòng ban' class='filter' id='departmentFilter'><option value=''>Tất cả phòng ban</option></select>
                   <select aria-label='Địa điểm' class='filter' id='locationFilter'><option value=''>Tất cả địa điểm</option></select>
                   <select aria-label='Hình thức' class='filter' id='typeFilter'><option value=''>Tất cả hình thức</option></select>
@@ -201,7 +201,7 @@
                         <div class='chips'><b:loop values='data:post.labels' var='label'><span class='chip'><data:label.name/></span></b:loop></div>
                         <h3><a expr:href='data:post.url'><data:post.title/></a></h3>
                         <p><data:post.snippet/></p>
-                        <a class='job-more' expr:href='data:post.url'>Xem chi tiết →</a>
+                        <a class='job-more' expr:href='data:post.url'>Xem chi tiết &#8594;</a>
                       </div>
                     </article>
                   </b:loop>
