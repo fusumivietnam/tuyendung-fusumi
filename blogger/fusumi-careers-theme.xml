@@ -48,6 +48,11 @@
     .mobile-jobs{display:none}
 
     .hero{padding:76px 0 64px;background:radial-gradient(circle at 82% 18%,rgba(20,184,166,.16),transparent 30%),linear-gradient(180deg,#fff,#f0fdfa);border-bottom:1px solid var(--line)}
+    #home_hero{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:stretch}
+    #home_hero:empty{display:none}
+    #home_hero .widget{margin:0;padding:28px;background:#fff;border:1px solid var(--line);border-radius:26px}
+    #home_hero .widget-title{margin-top:0}
+    #home_hero .Image img{width:100%;height:auto;border-radius:18px}
     .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:52px;align-items:center}
     .tag{display:inline-flex;padding:7px 12px;border-radius:99px;background:#ccfbf1;color:#115e59;font-size:13px;font-weight:900}
     .hero h1{font-size:clamp(42px,6vw,68px);line-height:1.05;letter-spacing:-.045em;margin:18px 0}
@@ -96,16 +101,21 @@
     .archive-head h1{margin:0 0 6px}
     .archive-head p{margin:0;color:var(--muted)}
 
+    #home_cta{margin-bottom:18px}
+    #home_cta:empty{display:none}
+    #home_cta .widget{margin:0;padding:28px;background:#fff;border:1px solid var(--line);border-radius:22px}
     .cta{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:42px;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-radius:26px}
     .cta h2{margin:0 0 7px;font-size:31px}.cta p{margin:0;color:#ccfbf1}.cta .btn{background:#fff;color:var(--brand2)}
 
     .site-footer{margin-top:70px;background:#0f172a;color:#cbd5e1}
     #footer{width:calc(100% - 32px);max-width:$(content.width);margin-left:auto;margin-right:auto;padding:34px 0}
     #footer .widget{margin:0 0 16px}
+    .footer-fallback{padding:28px 0;color:#cbd5e1}
+    .footer-fallback strong{display:block;color:#fff;font-size:18px;margin-bottom:8px}
     #footer a{color:#fff}
 
     @media(max-width:900px){
-      .hero-grid{grid-template-columns:1fr}
+      .hero-grid,#home_hero{grid-template-columns:1fr}
       .jobs{grid-template-columns:repeat(2,1fr)}
       .toolbar{grid-template-columns:1fr 1fr}
       .PageList{display:none}
@@ -123,9 +133,10 @@
   <b:template-skin><![CDATA[
     body#layout{background:#f5f5f5!important}
     body#layout .site-header,body#layout .site-footer{position:relative!important;background:#fff!important;color:#222!important}
-    body#layout .hero,body#layout .section{display:none!important}
+    body#layout .hero,body#layout .section{display:block!important;background:transparent!important;padding:0!important}
+    body#layout .hero-fallback,body#layout .cta-fallback,body#layout .footer-fallback{display:none!important}
     body#layout .header-row{display:grid!important;grid-template-columns:1fr 2fr;gap:12px;padding:12px!important}
-    body#layout #header,body#layout #page_list_top,body#layout #page_body,body#layout #footer{
+    body#layout #header,body#layout #page_list_top,body#layout #home_hero,body#layout #page_body,body#layout #home_cta,body#layout #footer{
       display:block!important;min-height:70px!important;width:100%!important;margin:10px 0!important;padding:6px!important
     }
     body#layout main{display:block!important;min-height:180px;padding:12px!important}
@@ -149,24 +160,27 @@
 
   <b:if cond='data:view.isHomepage'>
     <section class='hero'>
-      <div class='container hero-grid'>
-        <div>
-          <span class='tag'>CƠ HỘI NGHỀ NGHIỆP TẠI FUSUMI</span>
-          <h1>Cùng Fusumi tạo nên những giá trị tốt hơn mỗi ngày.</h1>
-          <p>Khám phá các vị trí đang tuyển và tìm cơ hội phù hợp với năng lực, định hướng và mong muốn phát triển của bạn.</p>
-          <div class='actions'>
-            <a class='btn primary' href='#viec-lam'>Xem vị trí đang tuyển</a>
-            <a class='btn light' href='/p/ve-fusumi.html'>Tìm hiểu Fusumi</a>
+      <div class='container'>
+        <b:section id='home_hero' maxwidgets='2' name='Trang chủ / Hero' showaddelement='yes'/>
+        <div class='hero-fallback hero-grid'>
+          <div>
+            <span class='tag'>CƠ HỘI NGHỀ NGHIỆP TẠI FUSUMI</span>
+            <h1>Cùng Fusumi tạo nên những giá trị tốt hơn mỗi ngày.</h1>
+            <p>Khám phá các vị trí đang tuyển và tìm cơ hội phù hợp với năng lực, định hướng và mong muốn phát triển của bạn.</p>
+            <div class='actions'>
+              <a class='btn primary' href='#viec-lam'>Xem vị trí đang tuyển</a>
+              <a class='btn light' href='/p/ve-fusumi.html'>Tìm hiểu Fusumi</a>
+            </div>
           </div>
-        </div>
-        <div class='hero-card'>
-          <h2>Tại sao chọn Fusumi?</h2>
-          <p>Môi trường làm việc thực tế, đề cao hiệu quả, tinh thần chủ động và cơ hội phát triển dài hạn.</p>
-          <div class='stats'>
-            <div class='stat'><strong>01</strong><span>Đội ngũ đồng hành</span></div>
-            <div class='stat'><strong>02</strong><span>Đánh giá minh bạch</span></div>
-            <div class='stat'><strong>03</strong><span>Cơ hội phát triển</span></div>
-            <div class='stat'><strong>04</strong><span>Phúc lợi phù hợp</span></div>
+          <div class='hero-card'>
+            <h2>Tại sao chọn Fusumi?</h2>
+            <p>Môi trường làm việc thực tế, đề cao hiệu quả, tinh thần chủ động và cơ hội phát triển dài hạn.</p>
+            <div class='stats'>
+              <div class='stat'><strong>01</strong><span>Đội ngũ đồng hành</span></div>
+              <div class='stat'><strong>02</strong><span>Đánh giá minh bạch</span></div>
+              <div class='stat'><strong>03</strong><span>Cơ hội phát triển</span></div>
+              <div class='stat'><strong>04</strong><span>Phúc lợi phù hợp</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -234,17 +248,23 @@
 
   <b:if cond='data:view.isHomepage'>
     <section class='section' style='padding-top:0'>
-      <div class='container'><div class='cta'><div><h2>Chưa thấy vị trí phù hợp?</h2><p>Gửi hồ sơ để Fusumi có thể liên hệ khi có cơ hội phù hợp.</p></div><a class='btn' href='/p/ung-tuyen.html'>Gửi hồ sơ</a></div></div>
+      <div class='container'>
+        <b:section id='home_cta' maxwidgets='1' name='Trang chủ / CTA ứng tuyển' showaddelement='yes'/>
+        <div class='cta cta-fallback'><div><h2>Chưa thấy vị trí phù hợp?</h2><p>Gửi hồ sơ để Fusumi có thể liên hệ khi có cơ hội phù hợp.</p></div><a class='btn' href='/p/ung-tuyen.html'>Gửi hồ sơ</a></div>
+      </div>
     </section>
   </b:if>
 
   <footer class='site-footer'>
     <b:section id='footer' name='Footer / Liên hệ' showaddelement='yes'/>
+    <div class='container footer-fallback'><strong>Fusumi Careers</strong><span>Cập nhật cơ hội nghề nghiệp và thông tin tuyển dụng tại Fusumi.</span></div>
   </footer>
 
   <script type='text/javascript'>
   //<![CDATA[
   (function(){
+    function hideFallback(sectionId,selector){var section=document.getElementById(sectionId);if(section&&section.querySelector('.widget')){var fallback=document.querySelector(selector);if(fallback)fallback.style.display='none'}}
+    hideFallback('home_hero','.hero-fallback');hideFallback('home_cta','.cta-fallback');hideFallback('footer','.footer-fallback');
     var chips=[].slice.call(document.querySelectorAll('.chip')),P={d:'PB:',l:'ĐĐ:',t:'HT:'},prefixes=[P.d,P.l,P.t];
     chips.forEach(function(c){var raw=(c.textContent||'').trim();c.setAttribute('data-raw',raw);prefixes.some(function(prefix){if(raw.indexOf(prefix)===0){c.textContent=raw.slice(prefix.length).trim();return true}return false})});
     var q=document.getElementById('jobSearch'),d=document.getElementById('departmentFilter'),l=document.getElementById('locationFilter'),t=document.getElementById('typeFilter'),clear=document.getElementById('clearFilters'),count=document.getElementById('jobCount'),empty=document.getElementById('jobsEmpty'),jobs=[].slice.call(document.querySelectorAll('.job'));
