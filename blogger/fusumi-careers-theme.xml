@@ -1,1 +1,263 @@
-PLACEHOLDER
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html b:css='false' b:defaultwidgetversion='2' b:layoutsVersion='3' b:responsive='true'
+  expr:dir='data:blog.languageDirection' expr:lang='data:blog.locale'
+  xmlns='http://www.w3.org/1999/xhtml'
+  xmlns:b='http://www.google.com/2005/gml/b'
+  xmlns:data='http://www.google.com/2005/gml/data'
+  xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+  <meta content='width=device-width, initial-scale=1' name='viewport'/>
+  <title><data:view.title.escaped/></title>
+  <b:include data='blog' name='all-head-content'/>
+  <meta content='#0f766e' name='theme-color'/>
+  <b:if cond='data:view.isHomepage'>
+    <meta content='Cơ hội nghề nghiệp và các vị trí đang tuyển tại Fusumi.' name='description'/>
+  </b:if>
+  <b:if cond='data:view.isSearch'>
+    <meta content='noindex,follow' name='robots'/>
+  </b:if>
+
+  <b:skin><![CDATA[
+    <Variable name="keycolor" description="Màu thương hiệu" type="color" default="#0f766e" value="#0f766e"/>
+    <Variable name="body.text.color" description="Màu chữ" type="color" default="#172033" value="#172033"/>
+    <Variable name="body.background.color" description="Màu nền" type="color" default="#f8fafc" value="#f8fafc"/>
+    <Variable name="body.link.color" description="Màu liên kết" type="color" default="#0f766e" value="#0f766e"/>
+    <Variable name="content.width" description="Độ rộng nội dung" type="length" min="760px" max="1600px" default="1180px" value="1180px"/>
+
+    :root{--brand:$(keycolor);--brand2:#115e59;--text:$(body.text.color);--muted:#64748b;--bg:$(body.background.color);--line:#e2e8f0;--white:#fff;--max:$(content.width);--r:18px;--shadow:0 12px 32px rgba(15,23,42,.08)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;height:auto}
+    .container{width:min(calc(100% - 32px),var(--max));margin:auto}
+
+    .site-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .header-row{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    #header,#header .widget,#header .widget-content{margin:0}
+    .Header h1,.Header h2{margin:0;font-size:20px;line-height:1.2;font-weight:900}
+    .Header .description{display:none}
+    .Header img{display:block;max-height:46px;width:auto}
+    #page_list_top{margin-left:auto}
+    #page_list_top .widget{margin:0}
+    .PageList ul{display:flex;align-items:center;gap:6px;list-style:none;margin:0;padding:0}
+    .PageList li{margin:0}
+    .PageList a{display:block;padding:11px 10px;font-size:14px;font-weight:800}
+    .PageList .selected a{color:var(--brand)}
+    .mobile-jobs{display:none}
+
+    .hero{padding:76px 0 64px;background:radial-gradient(circle at 82% 18%,rgba(20,184,166,.16),transparent 30%),linear-gradient(180deg,#fff,#f0fdfa);border-bottom:1px solid var(--line)}
+    .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:52px;align-items:center}
+    .tag{display:inline-flex;padding:7px 12px;border-radius:99px;background:#ccfbf1;color:#115e59;font-size:13px;font-weight:900}
+    .hero h1{font-size:clamp(42px,6vw,68px);line-height:1.05;letter-spacing:-.045em;margin:18px 0}
+    .hero p{max-width:680px;color:var(--muted);font-size:19px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:12px;border:1px solid transparent;font-weight:800}
+    .primary{background:var(--brand);color:#fff}.primary:hover{background:var(--brand2)}
+    .light{background:#fff;border-color:var(--line)}
+    .hero-card{padding:28px;background:#fff;border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow)}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+    .stat{padding:18px;background:#f8fafc;border:1px solid var(--line);border-radius:15px}
+    .stat strong{display:block;color:var(--brand);font-size:25px}
+    .stat span{font-size:13px;color:var(--muted)}
+
+    .section{padding:64px 0}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:26px}
+    .section-head h2{margin:0;font-size:34px;letter-spacing:-.03em}
+    .section-head p{margin:5px 0 0;color:var(--muted)}
+    .toolbar{display:grid;grid-template-columns:minmax(250px,1.6fr) repeat(3,minmax(145px,.7fr));gap:10px}
+    .job-search{display:flex;align-items:center;padding:0 12px;background:#fff;border:1px solid var(--line);border-radius:12px}
+    .job-search input{width:100%;padding:13px 8px;border:0;outline:0;background:transparent;font:inherit}
+    .filter{min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);font:inherit}
+    .summary{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:12px 0 22px;color:var(--muted);font-size:14px}
+    .clear{border:0;background:none;color:var(--brand);font:inherit;font-weight:900;cursor:pointer}
+
+    #page_body,#page_body .widget,#page_body .widget-content{display:contents}
+    .jobs{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .job{display:flex;flex-direction:column;min-height:270px;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:.2s}
+    .job:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#99f6e4}
+    .job-thumb{display:block;aspect-ratio:16/9;background:#f1f5f9;overflow:hidden}
+    .job-thumb img{width:100%;height:100%;object-fit:cover}
+    .job-inner{display:flex;flex:1;flex-direction:column;padding:22px}
+    .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+    .chip{padding:5px 9px;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:800}
+    .job h3{margin:0 0 12px;font-size:21px;line-height:1.35}
+    .job p{margin:0 0 18px;color:var(--muted);font-size:14px}
+    .job-more{margin-top:auto;color:var(--brand);font-weight:900}
+    .empty{display:none;padding:34px;margin-top:20px;text-align:center;color:var(--muted);background:#fff;border:1px dashed #cbd5e1;border-radius:var(--r)}
+
+    .content{width:min(calc(100% - 32px),880px);margin:48px auto;padding:36px;background:#fff;border:1px solid var(--line);border-radius:24px}
+    .content h1{margin:0 0 14px;font-size:38px;line-height:1.15}
+    .post-body h2,.post-body h3{margin-top:28px}
+    .post-body img{border-radius:12px}
+    .apply{margin-top:32px;padding:23px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:17px}
+    .archive-head{margin-bottom:24px}
+    .archive-head h1{margin:0 0 6px}
+    .archive-head p{margin:0;color:var(--muted)}
+
+    .cta{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:42px;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-radius:26px}
+    .cta h2{margin:0 0 7px;font-size:31px}.cta p{margin:0;color:#ccfbf1}.cta .btn{background:#fff;color:var(--brand2)}
+
+    .site-footer{margin-top:70px;background:#0f172a;color:#cbd5e1}
+    #footer{width:min(calc(100% - 32px),var(--max));margin:auto;padding:34px 0}
+    #footer .widget{margin:0 0 16px}
+    #footer a{color:#fff}
+
+    @media(max-width:900px){
+      .hero-grid{grid-template-columns:1fr}
+      .jobs{grid-template-columns:repeat(2,1fr)}
+      .toolbar{grid-template-columns:1fr 1fr}
+      .PageList{display:none}
+      .mobile-jobs{display:inline-flex}
+    }
+    @media(max-width:620px){
+      .hero{padding:52px 0}.section{padding:50px 0}
+      .jobs,.toolbar{grid-template-columns:1fr}
+      .summary,.cta{align-items:flex-start;flex-direction:column}
+      .content{padding:22px}
+      .content h1{font-size:31px}
+    }
+  ]]></b:skin>
+
+  <b:template-skin><![CDATA[
+    body#layout{background:#f5f5f5!important}
+    body#layout .site-header,body#layout .site-footer{position:relative!important;background:#fff!important;color:#222!important}
+    body#layout .hero,body#layout .section{display:none!important}
+    body#layout .header-row{display:grid!important;grid-template-columns:1fr 2fr;gap:12px;padding:12px!important}
+    body#layout #header,body#layout #page_list_top,body#layout #page_body,body#layout #footer{
+      display:block!important;min-height:70px!important;width:100%!important;margin:10px 0!important;padding:6px!important
+    }
+    body#layout main{display:block!important;min-height:180px;padding:12px!important}
+    body#layout #page_body{display:block!important}
+  ]]></b:template-skin>
+</head>
+<body>
+  <header class='site-header'>
+    <div class='container header-row'>
+      <b:section id='header' name='Logo / Tiêu đề Fusumi' showaddelement='false' maxwidgets='1'>
+        <b:widget id='Header1' locked='false' title='Fusumi Careers' type='Header' visible='true'/>
+      </b:section>
+      <nav aria-label='Điều hướng chính'>
+        <b:section id='page_list_top' name='Menu chính' showaddelement='false' maxwidgets='1'>
+          <b:widget id='PageList1' locked='false' title='Menu chính' type='PageList' visible='true'/>
+        </b:section>
+      </nav>
+      <a class='btn primary mobile-jobs' href='/search'>Việc làm</a>
+    </div>
+  </header>
+
+  <b:if cond='data:view.isHomepage'>
+    <section class='hero'>
+      <div class='container hero-grid'>
+        <div>
+          <span class='tag'>CƠ HỘI NGHỀ NGHIỆP TẠI FUSUMI</span>
+          <h1>Cùng Fusumi tạo nên những giá trị tốt hơn mỗi ngày.</h1>
+          <p>Khám phá các vị trí đang tuyển và tìm cơ hội phù hợp với năng lực, định hướng và mong muốn phát triển của bạn.</p>
+          <div class='actions'>
+            <a class='btn primary' href='#viec-lam'>Xem vị trí đang tuyển</a>
+            <a class='btn light' href='/p/ve-fusumi.html'>Tìm hiểu Fusumi</a>
+          </div>
+        </div>
+        <div class='hero-card'>
+          <h2>Tại sao chọn Fusumi?</h2>
+          <p>Môi trường làm việc thực tế, đề cao hiệu quả, tinh thần chủ động và cơ hội phát triển dài hạn.</p>
+          <div class='stats'>
+            <div class='stat'><strong>01</strong><span>Đội ngũ đồng hành</span></div>
+            <div class='stat'><strong>02</strong><span>Đánh giá minh bạch</span></div>
+            <div class='stat'><strong>03</strong><span>Cơ hội phát triển</span></div>
+            <div class='stat'><strong>04</strong><span>Phúc lợi phù hợp</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </b:if>
+
+  <main>
+    <b:section id='page_body' name='Nội dung / Việc làm' showaddelement='false' maxwidgets='1'>
+      <b:widget id='Blog1' locked='true' title='Bài đăng tuyển dụng' type='Blog' visible='true'>
+        <b:includable id='main'>
+          <b:if cond='data:view.isHomepage or data:view.isSearch or data:view.isArchive'>
+            <section class='section' id='viec-lam'>
+              <div class='container'>
+                <div class='section-head'>
+                  <div><h2>Vị trí đang tuyển</h2><p>Các tin tuyển dụng mới nhất từ Fusumi.</p></div>
+                  <b:if cond='data:view.isHomepage'><a class='btn light' href='/search'>Xem tất cả</a></b:if>
+                </div>
+                <div class='toolbar'>
+                  <div class='job-search'><span aria-hidden='true'>⌕</span><input aria-label='Tìm vị trí tuyển dụng' id='jobSearch' placeholder='Tìm tên vị trí, kỹ năng...' type='search'/></div>
+                  <select aria-label='Phòng ban' class='filter' id='departmentFilter'><option value=''>Tất cả phòng ban</option></select>
+                  <select aria-label='Địa điểm' class='filter' id='locationFilter'><option value=''>Tất cả địa điểm</option></select>
+                  <select aria-label='Hình thức' class='filter' id='typeFilter'><option value=''>Tất cả hình thức</option></select>
+                </div>
+                <div class='summary'><span id='jobCount'>Đang tải vị trí...</span><button class='clear' id='clearFilters' type='button'>Xóa bộ lọc</button></div>
+                <div class='jobs'>
+                  <b:loop values='data:posts' var='post'>
+                    <article class='job'>
+                      <b:if cond='data:post.featuredImage'>
+                        <a class='job-thumb' expr:href='data:post.url'><img expr:alt='data:post.title' expr:src='resizeImage(data:post.featuredImage, 720, &quot;16:9&quot;)'/></a>
+                      </b:if>
+                      <div class='job-inner'>
+                        <div class='chips'><b:loop values='data:post.labels' var='label'><span class='chip'><data:label.name/></span></b:loop></div>
+                        <h3><a expr:href='data:post.url'><data:post.title/></a></h3>
+                        <p><data:post.snippet/></p>
+                        <a class='job-more' expr:href='data:post.url'>Xem chi tiết →</a>
+                      </div>
+                    </article>
+                  </b:loop>
+                </div>
+                <div class='empty' id='jobsEmpty'>Không tìm thấy vị trí phù hợp.</div>
+              </div>
+            </section>
+          <b:elseif cond='data:view.isPost'/>
+            <main class='content' itemscope='itemscope' itemtype='https://schema.org/JobPosting'>
+              <div itemprop='hiringOrganization' itemscope='itemscope' itemtype='https://schema.org/Organization' style='display:none'>
+                <meta content='Fusumi' itemprop='name'/>
+                <meta expr:content='data:blog.homepageUrl' itemprop='sameAs'/>
+              </div>
+              <b:loop values='data:posts' var='post'>
+                <h1 itemprop='title'><data:post.title/></h1>
+                <div class='chips'><b:loop values='data:post.labels' var='label'><span class='chip'><data:label.name/></span></b:loop></div>
+                <div class='post-body' itemprop='description'><data:post.body/></div>
+                <div class='apply'><b>Sẵn sàng ứng tuyển?</b><p>Gửi hồ sơ để bộ phận tuyển dụng Fusumi xem xét và liên hệ.</p><a class='btn primary' href='/p/ung-tuyen.html'>Ứng tuyển vị trí này</a></div>
+              </b:loop>
+            </main>
+          <b:else/>
+            <main class='content'>
+              <b:loop values='data:posts' var='post'><h1><data:post.title/></h1><div class='post-body'><data:post.body/></div></b:loop>
+            </main>
+          </b:if>
+        </b:includable>
+      </b:widget>
+    </b:section>
+  </main>
+
+  <b:if cond='data:view.isHomepage'>
+    <section class='section' style='padding-top:0'>
+      <div class='container'><div class='cta'><div><h2>Chưa thấy vị trí phù hợp?</h2><p>Gửi hồ sơ để Fusumi có thể liên hệ khi có cơ hội phù hợp.</p></div><a class='btn' href='/p/ung-tuyen.html'>Gửi hồ sơ</a></div></div>
+    </section>
+  </b:if>
+
+  <footer class='site-footer'>
+    <b:section id='footer' name='Footer / Liên hệ' showaddelement='yes'/>
+  </footer>
+
+  <script type='text/javascript'>
+  //<![CDATA[
+  (function(){
+    var chips=[].slice.call(document.querySelectorAll('.chip')),P={d:'PB:',l:'ĐĐ:',t:'HT:'},prefixes=[P.d,P.l,P.t];
+    chips.forEach(function(c){var raw=(c.textContent||'').trim();c.setAttribute('data-raw',raw);prefixes.some(function(prefix){if(raw.indexOf(prefix)===0){c.textContent=raw.slice(prefix.length).trim();return true}return false})});
+    var q=document.getElementById('jobSearch'),d=document.getElementById('departmentFilter'),l=document.getElementById('locationFilter'),t=document.getElementById('typeFilter'),clear=document.getElementById('clearFilters'),count=document.getElementById('jobCount'),empty=document.getElementById('jobsEmpty'),jobs=[].slice.call(document.querySelectorAll('.job'));
+    if(!jobs.length||!q||!d||!l||!t||!clear||!count||!empty)return;
+    function norm(v){return(v||'').toLocaleLowerCase('vi').trim()}
+    function add(select,values){Object.keys(values).sort(function(a,b){return a.localeCompare(b,'vi')}).forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;select.appendChild(o)})}
+    function group(prefix){var out={};jobs.forEach(function(job){job.querySelectorAll('.chip').forEach(function(c){var raw=c.getAttribute('data-raw')||'';if(raw.indexOf(prefix)===0){var v=raw.slice(prefix.length).trim();if(v)out[v]=1}})});return out}
+    add(d,group(P.d));add(l,group(P.l));add(t,group(P.t));
+    function has(job,prefix,value){if(!value)return true;return[].slice.call(job.querySelectorAll('.chip')).some(function(c){return norm(c.getAttribute('data-raw'))===norm(prefix+value)})}
+    function run(){var text=norm(q.value),visible=0;jobs.forEach(function(job){var ok=(!text||norm(job.textContent).indexOf(text)>-1)&&has(job,P.d,d.value)&&has(job,P.l,l.value)&&has(job,P.t,t.value);job.style.display=ok?'flex':'none';if(ok)visible++});count.textContent=visible+' vị trí phù hợp';empty.style.display=visible?'none':'block'}
+    q.addEventListener('input',run);[d,l,t].forEach(function(x){x.addEventListener('change',run)});clear.addEventListener('click',function(){q.value='';d.value='';l.value='';t.value='';run();q.focus()});run();
+  })();
+  //]]>
+  </script>
+</body>
+</html>
