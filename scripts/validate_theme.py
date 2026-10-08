@@ -26,7 +26,17 @@ def main() -> None:
     if not THEME.exists():
         fail(f"Missing {THEME}")
 
-    text = THEME.read_text(encoding="utf-8")
+    raw = THEME.read_bytes()
+    if raw.startswith(b"\xef\xbb\xbf"):
+        fail("Theme must not contain a UTF-8 BOM")
+    if not raw.startswith(b'<?xml version="1.0" encoding="UTF-8" ?>'):
+        fail("Theme must start directly with the UTF-8 XML declaration")
+
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        fail(f"Theme is not valid UTF-8: {exc}")
+
     if any(marker in text for marker in ("<<<<<<<", "=======", ">>>>>>>")):
         fail("Merge conflict marker found in theme")
 
@@ -85,6 +95,7 @@ def main() -> None:
             fail(f"Missing native Blogger widget type: {widget_type}")
 
     print("Theme validation passed.")
+    print("Encoding: clean UTF-8, no BOM, XML declaration at byte 0")
     print("Architecture: Blogger Layout v3, Header + PageList + single Blog widget")
     print(f"Sections: {', '.join(section_ids)}")
     print(f"Widgets: {', '.join(widget_ids)}")
