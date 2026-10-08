@@ -42,6 +42,8 @@ def main() -> None:
         "PB:",
         "ĐĐ:",
         "HT:",
+        "id='header-logo'",
+        "id='header-menu'",
         "id='home-jobs'",
         "id='job-detail'",
         "id='page-archive'",
@@ -63,12 +65,12 @@ def main() -> None:
     section_ids = unique_ids(root, "section")
     widget_ids = unique_ids(root, "widget")
 
-    required_sections = {"home-jobs", "job-detail", "page-archive"}
+    required_sections = {"header-logo", "header-menu", "home-jobs", "job-detail", "page-archive"}
     missing_sections = sorted(required_sections.difference(section_ids))
     if missing_sections:
         fail("Missing required Blogger sections: " + ", ".join(missing_sections))
 
-    required_widgets = {"Blog1", "Blog2", "Blog3"}
+    required_widgets = {"Image1", "LinkList1", "Blog1", "Blog2", "Blog3"}
     missing_widgets = sorted(required_widgets.difference(widget_ids))
     if missing_widgets:
         fail("Missing required Blogger widgets: " + ", ".join(missing_widgets))
@@ -78,6 +80,17 @@ def main() -> None:
     ]
     if len(blog_widgets) != 3:
         fail(f"Expected exactly 3 Blogger Blog widgets, found {len(blog_widgets)}")
+
+    image_widgets = [
+        node for node in root.iter(f"{{{B_NS}}}widget") if node.get("type") == "Image"
+    ]
+    link_list_widgets = [
+        node for node in root.iter(f"{{{B_NS}}}widget") if node.get("type") == "LinkList"
+    ]
+    if not image_widgets:
+        fail("Expected at least one Blogger Image widget for header branding")
+    if not link_list_widgets:
+        fail("Expected at least one Blogger LinkList widget for header navigation")
 
     print("Theme validation passed.")
     print(f"Sections: {', '.join(section_ids)}")
