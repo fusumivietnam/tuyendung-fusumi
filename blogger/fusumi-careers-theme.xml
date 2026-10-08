@@ -26,7 +26,7 @@
   <b:skin><![CDATA[
     :root{--brand:#0f766e;--brand2:#115e59;--text:#172033;--muted:#64748b;--bg:#f8fafc;--line:#e2e8f0;--white:#fff;--max:1180px;--r:18px;--shadow:0 12px 32px rgba(15,23,42,.08)}
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}a{color:inherit;text-decoration:none}img{max-width:100%;height:auto}.container{width:min(calc(100% - 32px),var(--max));margin:auto}
-    .header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.nav{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900}.mark{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,var(--brand),#14b8a6);color:#fff}.links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:700}
+    .header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}.nav{min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:22px}.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:900}.mark{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,var(--brand),#14b8a6);color:#fff}.brand-logo img{display:block;width:auto;max-height:46px}.links{display:flex;align-items:center;gap:22px;font-size:14px;font-weight:700}#header-logo,#header-logo .widget,#header-logo .widget-content,#header-menu,#header-menu .widget,#header-menu .widget-content{display:contents}
     .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border-radius:12px;border:1px solid transparent;font-weight:800}.primary{background:var(--brand);color:#fff}.primary:hover{background:var(--brand2)}.light{background:#fff;border-color:var(--line)}
     .hero{padding:84px 0 72px;background:radial-gradient(circle at 82% 18%,rgba(20,184,166,.16),transparent 30%),linear-gradient(180deg,#fff,#f0fdfa);border-bottom:1px solid var(--line)}.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:52px;align-items:center}.tag{display:inline-flex;padding:7px 12px;border-radius:99px;background:#ccfbf1;color:#115e59;font-size:13px;font-weight:900}.hero h1{font-size:clamp(42px,6vw,70px);line-height:1.05;letter-spacing:-.045em;margin:18px 0}.hero p{max-width:680px;color:var(--muted);font-size:19px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}.hero-card{padding:28px;background:#fff;border:1px solid var(--line);border-radius:26px;box-shadow:var(--shadow)}.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.stat{padding:18px;background:#f8fafc;border:1px solid var(--line);border-radius:15px}.stat strong{display:block;color:var(--brand);font-size:25px}.stat span{font-size:13px;color:var(--muted)}
     .section{padding:72px 0}.section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:26px}.section-head h2{margin:0;font-size:34px;letter-spacing:-.03em}.section-head p{margin:5px 0 0;color:var(--muted)}.benefits{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.benefit{padding:23px;background:#fff;border:1px solid var(--line);border-radius:var(--r)}.benefit b{display:block;margin-bottom:7px;font-size:18px}.benefit p{margin:0;color:var(--muted);font-size:14px}
@@ -39,7 +39,33 @@
   ]]></b:skin>
 </head>
 <body>
-  <header class='header'><div class='container nav'><a class='brand' expr:href='data:blog.homepageUrl'><span class='mark'>F</span><span>Fusumi Careers</span></a><nav class='links'><a expr:href='data:blog.homepageUrl'>Trang chủ</a><a href='/search'>Việc làm</a><a href='/p/ve-fusumi.html'>Về Fusumi</a><a href='/p/quy-trinh-tuyen-dung.html'>Quy trình</a><a class='btn primary' href='/p/ung-tuyen.html'>Ứng tuyển</a></nav><a class='btn primary mobile' href='/search'>Việc làm</a></div></header>
+  <header class='header'><div class='container nav'>
+    <b:section id='header-logo' maxwidgets='1' showaddelement='yes'>
+      <b:widget id='Image1' locked='false' title='Logo Fusumi' type='Image' version='2' visible='true'>
+        <b:includable id='main'>
+          <b:if cond='data:sourceUrl'>
+            <a class='brand brand-logo' expr:href='data:blog.homepageUrl'><img alt='Fusumi' expr:src='data:sourceUrl'/></a>
+          <b:else/>
+            <a class='brand' expr:href='data:blog.homepageUrl'><span class='mark'>F</span><span>Fusumi Careers</span></a>
+          </b:if>
+        </b:includable>
+      </b:widget>
+    </b:section>
+    <nav class='links'>
+      <b:section id='header-menu' maxwidgets='1' showaddelement='yes'>
+        <b:widget id='LinkList1' locked='false' title='Menu chính' type='LinkList' version='2' visible='true'>
+          <b:includable id='main'>
+            <b:if cond='data:links'>
+              <b:loop values='data:links' var='link'><a expr:href='data:link.target'><data:link.name/></a></b:loop>
+            <b:else/>
+              <a expr:href='data:blog.homepageUrl'>Trang chủ</a><a href='/search'>Việc làm</a><a href='/p/ve-fusumi.html'>Về Fusumi</a><a href='/p/quy-trinh-tuyen-dung.html'>Quy trình</a><a class='btn primary' href='/p/ung-tuyen.html'>Ứng tuyển</a>
+            </b:if>
+          </b:includable>
+        </b:widget>
+      </b:section>
+    </nav>
+    <a class='btn primary mobile' href='/search'>Việc làm</a>
+  </div></header>
 
   <b:if cond='data:view.isHomepage'>
     <section class='hero'><div class='container hero-grid'><div><span class='tag'>CƠ HỘI NGHỀ NGHIỆP TẠI FUSUMI</span><h1>Cùng Fusumi tạo nên những giá trị tốt hơn mỗi ngày.</h1><p>Khám phá các vị trí đang tuyển và tìm cơ hội phù hợp với năng lực, định hướng và mong muốn phát triển của bạn.</p><div class='actions'><a class='btn primary' href='#viec-lam'>Xem vị trí đang tuyển</a><a class='btn light' href='/p/ve-fusumi.html'>Tìm hiểu Fusumi</a></div></div><div class='hero-card'><h2>Tại sao chọn Fusumi?</h2><p>Môi trường làm việc thực tế, đề cao hiệu quả, tinh thần chủ động và cơ hội phát triển dài hạn.</p><div class='stats'><div class='stat'><strong>01</strong><span>Đội ngũ đồng hành</span></div><div class='stat'><strong>02</strong><span>Đánh giá minh bạch</span></div><div class='stat'><strong>03</strong><span>Cơ hội phát triển</span></div><div class='stat'><strong>04</strong><span>Phúc lợi phù hợp</span></div></div></div></div></section>
