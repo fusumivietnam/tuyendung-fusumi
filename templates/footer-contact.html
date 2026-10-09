@@ -7,8 +7,8 @@
   <div class="fusumi-footer-grid">
     <div>
       <h3>Liên hệ tuyển dụng</h3>
-      <p>Email: <a href="mailto:YOUR_RECRUITMENT_EMAIL">YOUR_RECRUITMENT_EMAIL</a></p>
-      <p>Điện thoại: <a href="tel:YOUR_PHONE">YOUR_PHONE</a></p>
+      <p>Email: <a href="mailto:hr@fusumi.vn">hr@fusumi.vn</a></p>
+      <p>Điện thoại: <a href="tel:0797139999">0797139999</a></p>
     </div>
 
     <div>
@@ -24,3 +24,106 @@
     <span><a href="/">tuyendung.fusumi.vn</a></span>
   </div>
 </div>
+
+<script>
+(function(){
+  var PREFIXES=['PB:','ĐĐ:','HT:'];
+
+  function stripPrefix(raw){
+    raw=(raw||'').trim();
+    for(var i=0;i<PREFIXES.length;i++){
+      if(raw.indexOf(PREFIXES[i])===0){
+        return raw.slice(PREFIXES[i].length).trim();
+      }
+    }
+    return raw;
+  }
+
+  function addFilterOption(selectId,prefix,value){
+    if(!value)return;
+    var select=document.getElementById(selectId);
+    if(!select)return;
+    var exists=[].slice.call(select.options).some(function(o){return o.value===value;});
+    if(!exists){
+      var option=document.createElement('option');
+      option.value=value;
+      option.textContent=value;
+      select.appendChild(option);
+    }
+  }
+
+  function syncChipFilters(chip){
+    var raw=chip.getAttribute('data-raw')||'';
+    if(raw.indexOf('PB:')===0)addFilterOption('departmentFilter','PB:',raw.slice(3).trim());
+    if(raw.indexOf('ĐĐ:')===0)addFilterOption('locationFilter','ĐĐ:',raw.slice(3).trim());
+    if(raw.indexOf('HT:')===0)addFilterOption('typeFilter','HT:',raw.slice(3).trim());
+  }
+
+  function hydrate(job){
+    if(!job.querySelector('.job-thumb'))job.classList.add('job-no-image');
+
+    var title=job.querySelector('h3');
+    var snippet=job.querySelector('.job-inner > p');
+    var chips=job.querySelector('.chips');
+    var more=job.querySelector('.job-more');
+
+    if(!title||!snippet||!chips||!more)return Promise.resolve();
+
+    var missingTitle=!title.textContent.trim();
+    var missingSnippet=!snippet.textContent.trim();
+    var missingChips=!chips.textContent.trim();
+    if(!missingTitle&&!missingSnippet&&!missingChips)return Promise.resolve();
+
+    return fetch(more.href,{credentials:'same-origin'})
+      .then(function(response){if(!response.ok)throw new Error('HTTP '+response.status);return response.text();})
+      .then(function(html){
+        var doc=new DOMParser().parseFromString(html,'text/html');
+
+        if(missingTitle){
+          var sourceTitle=doc.querySelector('.content h1');
+          var targetLink=title.querySelector('a');
+          if(sourceTitle&&targetLink)targetLink.textContent=sourceTitle.textContent.trim();
+        }
+
+        if(missingChips){
+          var sourceChips=doc.querySelector('.content .chips');
+          if(sourceChips){
+            chips.innerHTML='';
+            [].slice.call(sourceChips.querySelectorAll('.chip')).forEach(function(sourceChip){
+              var raw=(sourceChip.textContent||'').trim();
+              if(!raw)return;
+              var chip=document.createElement('span');
+              chip.className='chip';
+              chip.setAttribute('data-raw',raw);
+              chip.textContent=stripPrefix(raw);
+              chips.appendChild(chip);
+              syncChipFilters(chip);
+            });
+          }
+        }
+
+        if(missingSnippet){
+          var body=doc.querySelector('.post-body');
+          if(body){
+            var text=(body.textContent||'').replace(/\s+/g,' ').trim();
+            if(text.length>170)text=text.slice(0,167).trim()+'...';
+            snippet.textContent=text;
+          }
+        }
+      })
+      .catch(function(error){
+        if(window.console&&console.warn)console.warn('Fusumi job-card fallback:',error);
+      });
+  }
+
+  var jobs=[].slice.call(document.querySelectorAll('.job'));
+  if(!jobs.length)return;
+
+  Promise.all(jobs.map(hydrate)).then(function(){
+    var search=document.getElementById('jobSearch');
+    if(search){
+      setTimeout(function(){search.dispatchEvent(new Event('input',{bubbles:true}));},0);
+    }
+  });
+})();
+</script>
