@@ -53,7 +53,6 @@ def main() -> None:
         "id='page_list_top'",
         "id='home_hero'",
         "id='page_body'",
-        "id='home_cta'",
         "id='footer'",
         "id='jobSearch'",
         "id='departmentFilter'",
@@ -77,7 +76,7 @@ def main() -> None:
     section_ids = unique_ids(root, "section")
     widget_ids = unique_ids(root, "widget")
 
-    required_sections = {"header", "page_list_top", "home_hero", "page_body", "home_cta", "footer"}
+    required_sections = {"header", "page_list_top", "home_hero", "page_body", "footer"}
     missing_sections = sorted(required_sections.difference(section_ids))
     if missing_sections:
         fail("Missing required Blogger sections: " + ", ".join(missing_sections))
@@ -99,7 +98,7 @@ def main() -> None:
     print("Theme validation passed.")
     print("Encoding: clean UTF-8, no BOM, XML declaration at byte 0")
     print("Architecture: Blogger Layout v3, Header + PageList + single Blog widget")
-    print("CMS slots: home_hero, home_cta, footer")
+    print("CMS slot pilot: home_hero")
     print(f"Sections: {', '.join(section_ids)}")
     print(f"Widgets: {', '.join(widget_ids)}")
 
