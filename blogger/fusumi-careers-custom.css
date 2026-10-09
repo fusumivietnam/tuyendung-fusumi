@@ -124,6 +124,72 @@ select:focus-visible{
   color:#fff;
 }
 
+/* Native Blogger footer contact gadget */
+#footer .widget{
+  margin:0;
+}
+
+#footer .widget-content{
+  margin:0;
+}
+
+.fusumi-footer-contact{
+  display:grid;
+  gap:28px;
+}
+
+.fusumi-footer-brand strong{
+  display:block;
+  margin-bottom:8px;
+  color:#fff;
+  font-size:22px;
+  line-height:1.25;
+}
+
+.fusumi-footer-brand p{
+  max-width:620px;
+  margin:0;
+  color:#d9d7ef;
+}
+
+.fusumi-footer-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);
+  gap:36px;
+  padding:26px 0;
+  border-top:1px solid rgba(255,255,255,.14);
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+
+.fusumi-footer-grid h3{
+  margin:0 0 12px;
+  color:#fff;
+  font-size:16px;
+}
+
+.fusumi-footer-grid p{
+  margin:7px 0;
+}
+
+.fusumi-footer-contact a{
+  color:#fff;
+  text-decoration:none;
+}
+
+.fusumi-footer-contact a:hover{
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+
+.fusumi-footer-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  color:#b9b7d6;
+  font-size:13px;
+}
+
 @media(max-width:900px){
   .header-row{min-height:68px}
   .hero{padding:58px 0 52px}
@@ -155,4 +221,6 @@ select:focus-visible{
   .content h1{font-size:31px}
   .cta{padding:28px 24px;border-radius:20px}
   .cta h2{font-size:27px}
+  .fusumi-footer-grid{grid-template-columns:1fr;gap:20px;padding:22px 0}
+  .fusumi-footer-bottom{align-items:flex-start;flex-direction:column;gap:6px}
 }
