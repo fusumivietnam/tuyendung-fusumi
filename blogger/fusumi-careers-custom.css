@@ -1,10 +1,18 @@
+/* =========================================================
+   FUSUMI CAREERS — CUSTOM CSS
+   Runtime: Blogger > Theme > Customize > Advanced > Add CSS
+   Replace toàn bộ nội dung Add CSS bằng file này.
+   ========================================================= */
+
 :root{
   --brand:#282568;
   --brand2:#1d1a52;
   --brand-soft:#f2f1fb;
   --brand-line:#d9d7ef;
+  --text:#172033;
   --muted:#667085;
   --line:#e5e7eb;
+  --white:#ffffff;
   --shadow:0 14px 36px rgba(40,37,104,.10);
 }
 
@@ -16,21 +24,34 @@ select:focus-visible{
   outline-offset:3px;
 }
 
-.hero{
-  padding:72px 0 64px;
-  background:
-    radial-gradient(circle at 82% 18%,rgba(40,37,104,.12),transparent 32%),
-    linear-gradient(180deg,#fff,#f6f5fb);
+/* Header */
+.site-header{
+  border-bottom:1px solid var(--line);
 }
 
-.tag{
-  background:var(--brand-soft);
+.header-row{
+  min-height:72px;
+}
+
+.Header img{
+  display:block;
+  width:auto;
+  max-height:46px;
+}
+
+.PageList a{
+  transition:color .18s ease;
+}
+
+.PageList a:hover,
+.PageList .selected a{
   color:var(--brand);
-  letter-spacing:.02em;
 }
 
+/* Buttons */
 .primary{
   background:var(--brand);
+  color:#fff;
 }
 
 .primary:hover{
@@ -42,7 +63,65 @@ select:focus-visible{
   color:var(--brand);
 }
 
-/* Job listing polish */
+/* Hero */
+.hero{
+  padding:72px 0 64px;
+  background:
+    radial-gradient(circle at 82% 18%,rgba(40,37,104,.12),transparent 32%),
+    linear-gradient(180deg,#fff,#f6f5fb);
+}
+
+.hero-grid{
+  align-items:center;
+}
+
+.hero h1{
+  color:var(--text);
+}
+
+.hero p{
+  color:var(--muted);
+}
+
+.tag{
+  background:var(--brand-soft);
+  color:var(--brand);
+  letter-spacing:.02em;
+}
+
+.hero-card{
+  border-color:var(--brand-line);
+  box-shadow:var(--shadow);
+}
+
+.stat strong{
+  color:var(--brand);
+}
+
+/* Job section */
+#viec-lam{
+  scroll-margin-top:96px;
+}
+
+.section-head h2{
+  color:var(--text);
+}
+
+.section-head p{
+  color:var(--muted);
+}
+
+.job-search,
+.filter{
+  border-color:var(--line);
+}
+
+.job-search:focus-within{
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(40,37,104,.08);
+}
+
+/* Job listing */
 .jobs{
   grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
   align-items:stretch;
@@ -50,9 +129,11 @@ select:focus-visible{
 
 .job{
   height:100%;
+  border-color:var(--line);
 }
 
 .job:hover{
+  transform:translateY(-3px);
   box-shadow:var(--shadow);
   border-color:var(--brand-line);
 }
@@ -69,6 +150,7 @@ select:focus-visible{
   display:-webkit-box;
   min-height:57px;
   overflow:hidden;
+  color:var(--text);
   -webkit-box-orient:vertical;
   -webkit-line-clamp:2;
 }
@@ -77,8 +159,13 @@ select:focus-visible{
   display:-webkit-box;
   min-height:66px;
   overflow:hidden;
+  color:var(--muted);
   -webkit-box-orient:vertical;
   -webkit-line-clamp:3;
+}
+
+.job-more{
+  color:var(--brand);
 }
 
 .job.job-no-image::before{
@@ -100,10 +187,16 @@ select:focus-visible{
   color:#475467;
 }
 
+/* Job detail / Static pages */
 .content{
   max-width:920px;
   padding:40px;
+  border-color:var(--line);
   box-shadow:0 8px 28px rgba(15,23,42,.04);
+}
+
+.content h1{
+  color:var(--text);
 }
 
 .post-body{
@@ -134,6 +227,7 @@ select:focus-visible{
   text-underline-offset:2px;
 }
 
+/* Apply box */
 .apply{
   margin-top:36px;
   padding:26px;
@@ -145,8 +239,8 @@ select:focus-visible{
 .apply b{
   display:block;
   margin-bottom:4px;
-  font-size:20px;
   color:var(--brand);
+  font-size:20px;
 }
 
 .apply p{
@@ -154,25 +248,37 @@ select:focus-visible{
   color:#475467;
 }
 
+/* Homepage CTA */
 .cta{
   background:linear-gradient(135deg,var(--brand2),var(--brand));
   box-shadow:0 18px 42px rgba(40,37,104,.18);
+}
+
+.cta h2{
+  color:#fff;
 }
 
 .cta p{
   color:#e8e7f5;
 }
 
+.cta .btn{
+  background:#fff;
+  color:var(--brand);
+}
+
+/* Footer */
 .site-footer{
+  margin-top:70px;
   background:#1d1a52;
   color:#d9d7ef;
 }
 
-#footer .widget-title{
-  color:#fff;
+#footer{
+  padding-top:36px;
+  padding-bottom:36px;
 }
 
-/* Native Blogger footer contact gadget */
 #footer .widget{
   margin:0;
 }
@@ -181,16 +287,22 @@ select:focus-visible{
   margin:0;
 }
 
+#footer .widget-title{
+  color:#fff;
+}
+
 .fusumi-footer-contact{
   display:grid;
   gap:28px;
+  width:100%;
 }
 
 .fusumi-footer-brand strong{
   display:block;
-  margin-bottom:8px;
+  margin:0 0 8px;
   color:#fff;
   font-size:22px;
+  font-weight:800;
   line-height:1.25;
 }
 
@@ -198,25 +310,33 @@ select:focus-visible{
   max-width:620px;
   margin:0;
   color:#d9d7ef;
+  line-height:1.65;
 }
 
 .fusumi-footer-grid{
   display:grid;
-  grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);
-  gap:36px;
-  padding:26px 0;
+  grid-template-columns:minmax(0,1.2fr) minmax(240px,.8fr);
+  gap:48px;
+  padding:28px 0;
   border-top:1px solid rgba(255,255,255,.14);
   border-bottom:1px solid rgba(255,255,255,.14);
 }
 
+.fusumi-footer-grid > div{
+  min-width:0;
+}
+
 .fusumi-footer-grid h3{
-  margin:0 0 12px;
+  margin:0 0 14px;
   color:#fff;
   font-size:16px;
+  font-weight:800;
+  line-height:1.4;
 }
 
 .fusumi-footer-grid p{
-  margin:7px 0;
+  margin:8px 0;
+  color:#d9d7ef;
 }
 
 .fusumi-footer-contact a{
@@ -225,6 +345,7 @@ select:focus-visible{
 }
 
 .fusumi-footer-contact a:hover{
+  color:#fff;
   text-decoration:underline;
   text-underline-offset:3px;
 }
@@ -233,47 +354,169 @@ select:focus-visible{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:18px;
+  gap:20px;
   color:#b9b7d6;
   font-size:13px;
+  line-height:1.6;
 }
 
+.fusumi-footer-bottom span{
+  display:block;
+}
+
+/* Tablet */
 @media(max-width:900px){
-  .header-row{min-height:68px}
-  .hero{padding:58px 0 52px}
-  .hero-grid{grid-template-columns:1fr;gap:28px}
-  .hero h1{font-size:clamp(38px,8vw,54px)}
-  .content{margin:32px auto}
-  .jobs{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .header-row{
+    min-height:68px;
+  }
+
+  #viec-lam{
+    scroll-margin-top:88px;
+  }
+
+  .hero{
+    padding:58px 0 52px;
+  }
+
+  .hero-grid{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+
+  .hero h1{
+    font-size:clamp(38px,8vw,54px);
+  }
+
+  .content{
+    margin:32px auto;
+  }
+
+  .jobs{
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  }
+
+  .fusumi-footer-grid{
+    grid-template-columns:1fr 1fr;
+    gap:32px;
+  }
 }
 
+/* Mobile */
 @media(max-width:620px){
-  .container{width:calc(100% - 24px)}
-  .header-row{gap:12px}
-  .Header img{max-height:38px}
-  .hero{padding:44px 0}
-  .section{padding:42px 0}
-  .hero h1{font-size:36px;letter-spacing:-.035em}
-  .hero p{font-size:17px}
-  .hero-card{padding:22px;border-radius:20px}
+  .container{
+    width:calc(100% - 24px);
+  }
+
+  .header-row{
+    gap:12px;
+  }
+
+  .Header img{
+    max-height:38px;
+  }
+
+  #viec-lam{
+    scroll-margin-top:78px;
+  }
+
+  .hero{
+    padding:44px 0;
+  }
+
+  .hero h1{
+    font-size:36px;
+    letter-spacing:-.035em;
+  }
+
+  .hero p{
+    font-size:17px;
+  }
+
+  .hero-card{
+    padding:22px;
+    border-radius:20px;
+  }
+
+  .section{
+    padding:42px 0;
+  }
+
   .section-head,
   .summary,
-  .cta{align-items:flex-start;flex-direction:column}
-  .section-head h2{font-size:29px}
-  .jobs{grid-template-columns:1fr}
-  .job-inner{min-height:0;padding:18px}
-  .job h3{min-height:0}
-  .job-inner > p{min-height:0}
-  .job.job-no-image::before{min-height:108px;font-size:19px}
+  .cta{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .section-head h2{
+    font-size:29px;
+  }
+
+  .jobs{
+    grid-template-columns:1fr;
+  }
+
+  .job-inner{
+    min-height:0;
+    padding:18px;
+  }
+
+  .job h3,
+  .job-inner > p{
+    min-height:0;
+  }
+
+  .job.job-no-image::before{
+    min-height:108px;
+    font-size:19px;
+  }
+
   .content{
     width:calc(100% - 24px);
-    padding:22px;
     margin:24px auto;
+    padding:22px;
     border-radius:18px;
   }
-  .content h1{font-size:31px}
-  .cta{padding:28px 24px;border-radius:20px}
-  .cta h2{font-size:27px}
-  .fusumi-footer-grid{grid-template-columns:1fr;gap:20px;padding:22px 0}
-  .fusumi-footer-bottom{align-items:flex-start;flex-direction:column;gap:6px}
+
+  .content h1{
+    font-size:31px;
+  }
+
+  .cta{
+    padding:28px 24px;
+    border-radius:20px;
+  }
+
+  .cta h2{
+    font-size:27px;
+  }
+
+  .site-footer{
+    margin-top:52px;
+  }
+
+  #footer{
+    padding-top:30px;
+    padding-bottom:30px;
+  }
+
+  .fusumi-footer-contact{
+    gap:22px;
+  }
+
+  .fusumi-footer-brand strong{
+    font-size:20px;
+  }
+
+  .fusumi-footer-grid{
+    grid-template-columns:1fr;
+    gap:22px;
+    padding:22px 0;
+  }
+
+  .fusumi-footer-bottom{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:6px;
+  }
 }
