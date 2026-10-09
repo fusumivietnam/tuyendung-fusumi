@@ -155,8 +155,7 @@
 
   <div class='home-hero-cms'>
     <div class='container'>
-      <b:section id='home_hero' maxwidgets='2' name='Trang chủ / Hero' showaddelement='yes'>
-      </b:section>
+      <b:section id='home_hero' maxwidgets='2' name='Trang chủ / Hero' showaddelement='yes'/>
     </div>
   </div>
 
@@ -200,7 +199,7 @@
                   <b:if cond='data:view.isHomepage'><a class='btn light' href='/search'>Xem tất cả</a></b:if>
                 </div>
                 <div class='toolbar'>
-                  <div class='job-search'><span aria-hidden='true'>⌕</span><input aria-label='Tìm vị trí tuyển dụng' id='jobSearch' placeholder='Tìm tên vị trí, kỹ năng...' type='search'/></div>
+                  <div class='job-search'><span aria-hidden='true'>&#8981;</span><input aria-label='Tìm vị trí tuyển dụng' id='jobSearch' placeholder='Tìm tên vị trí, kỹ năng...' type='search'/></div>
                   <select aria-label='Phòng ban' class='filter' id='departmentFilter'><option value=''>Tất cả phòng ban</option></select>
                   <select aria-label='Địa điểm' class='filter' id='locationFilter'><option value=''>Tất cả địa điểm</option></select>
                   <select aria-label='Hình thức' class='filter' id='typeFilter'><option value=''>Tất cả hình thức</option></select>
@@ -216,7 +215,7 @@
                         <div class='chips'><b:loop values='data:post.labels' var='label'><span class='chip'><data:label.name/></span></b:loop></div>
                         <h3><a expr:href='data:post.url'><data:post.title/></a></h3>
                         <p><data:post.snippet/></p>
-                        <a class='job-more' expr:href='data:post.url'>Xem chi tiết →</a>
+                        <a class='job-more' expr:href='data:post.url'>Xem chi tiết &#8594;</a>
                       </div>
                     </article>
                   </b:loop>
@@ -254,8 +253,7 @@
   </b:if>
 
   <footer class='site-footer'>
-    <b:section id='footer' name='Footer / Liên hệ' showaddelement='yes'>
-    </b:section>
+    <b:section id='footer' name='Footer / Liên hệ' showaddelement='yes'/>
   </footer>
 
   <script type='text/javascript'>
