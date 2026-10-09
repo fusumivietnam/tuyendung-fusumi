@@ -47,6 +47,20 @@ select:focus-visible{
   border-color:var(--brand-line);
 }
 
+.job.job-no-image::before{
+  content:'FUSUMI';
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:132px;
+  padding:20px;
+  background:linear-gradient(135deg,#f4f3fb,#eceaf7);
+  color:var(--brand);
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+
 .chip{
   background:#f3f4f6;
   color:#475467;
@@ -212,6 +226,7 @@ select:focus-visible{
   .cta{align-items:flex-start;flex-direction:column}
   .section-head h2{font-size:29px}
   .job-inner{padding:18px}
+  .job.job-no-image::before{min-height:108px;font-size:19px}
   .content{
     width:calc(100% - 24px);
     padding:22px;
