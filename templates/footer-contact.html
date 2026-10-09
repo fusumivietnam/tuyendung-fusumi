@@ -28,9 +28,14 @@
 <script>
 (function(){
   var PREFIXES=['PB:','ĐĐ:','HT:'];
+  var META_PREFIX=/^(địa điểm|hình thức|thu nhập|số lượng|hạn ứng tuyển|mức lương|thời gian làm việc|kinh nghiệm|giới tính)\s*:/i;
+
+  function normalize(text){
+    return (text||'').replace(/\s+/g,' ').trim();
+  }
 
   function stripPrefix(raw){
-    raw=(raw||'').trim();
+    raw=normalize(raw);
     for(var i=0;i<PREFIXES.length;i++){
       if(raw.indexOf(PREFIXES[i])===0){
         return raw.slice(PREFIXES[i].length).trim();
@@ -39,11 +44,13 @@
     return raw;
   }
 
-  function addFilterOption(selectId,prefix,value){
+  function addFilterOption(selectId,value){
     if(!value)return;
     var select=document.getElementById(selectId);
     if(!select)return;
-    var exists=[].slice.call(select.options).some(function(o){return o.value===value;});
+    var exists=[].slice.call(select.options).some(function(o){
+      return o.value===value;
+    });
     if(!exists){
       var option=document.createElement('option');
       option.value=value;
@@ -54,44 +61,86 @@
 
   function syncChipFilters(chip){
     var raw=chip.getAttribute('data-raw')||'';
-    if(raw.indexOf('PB:')===0)addFilterOption('departmentFilter','PB:',raw.slice(3).trim());
-    if(raw.indexOf('ĐĐ:')===0)addFilterOption('locationFilter','ĐĐ:',raw.slice(3).trim());
-    if(raw.indexOf('HT:')===0)addFilterOption('typeFilter','HT:',raw.slice(3).trim());
+    if(raw.indexOf('PB:')===0)addFilterOption('departmentFilter',raw.slice(3).trim());
+    if(raw.indexOf('ĐĐ:')===0)addFilterOption('locationFilter',raw.slice(3).trim());
+    if(raw.indexOf('HT:')===0)addFilterOption('typeFilter',raw.slice(3).trim());
+  }
+
+  function shorten(text,max){
+    text=normalize(text);
+    if(text.length<=max)return text;
+    return text.slice(0,max-3).replace(/\s+\S*$/,'').trim()+'...';
+  }
+
+  function naturalSnippet(doc){
+    var body=doc.querySelector('.post-body');
+    if(!body)return '';
+
+    var paragraphs=[].slice.call(body.querySelectorAll('p'));
+    for(var i=0;i<paragraphs.length;i++){
+      var text=normalize(paragraphs[i].textContent);
+      if(text.length>=45 && !META_PREFIX.test(text)){
+        return shorten(text,180);
+      }
+    }
+
+    var blocks=[].slice.call(body.querySelectorAll('div,li'));
+    for(var j=0;j<blocks.length;j++){
+      var fallback=normalize(blocks[j].textContent);
+      if(fallback.length>=60 && !META_PREFIX.test(fallback)){
+        return shorten(fallback,180);
+      }
+    }
+
+    var all=normalize(body.textContent);
+    all=all
+      .replace(/Địa điểm\s*:[^:]{0,100}(?=(Hình thức|Thu nhập|Số lượng|Hạn ứng tuyển|$))/ig,' ')
+      .replace(/Hình thức\s*:[^:]{0,100}(?=(Thu nhập|Số lượng|Hạn ứng tuyển|$))/ig,' ')
+      .replace(/Thu nhập\s*:[^:]{0,140}(?=(Số lượng|Hạn ứng tuyển|$))/ig,' ')
+      .replace(/Số lượng\s*:[^:]{0,60}(?=(Hạn ứng tuyển|$))/ig,' ')
+      .replace(/Hạn ứng tuyển\s*:[^:]{0,100}/ig,' ');
+
+    return shorten(all,180);
   }
 
   function hydrate(job){
-    if(!job.querySelector('.job-thumb'))job.classList.add('job-no-image');
+    if(!job.querySelector('.job-thumb')){
+      job.classList.add('job-no-image');
+    }
 
     var title=job.querySelector('h3');
     var snippet=job.querySelector('.job-inner > p');
     var chips=job.querySelector('.chips');
     var more=job.querySelector('.job-more');
 
-    if(!title||!snippet||!chips||!more)return Promise.resolve();
-
-    var missingTitle=!title.textContent.trim();
-    var missingSnippet=!snippet.textContent.trim();
-    var missingChips=!chips.textContent.trim();
-    if(!missingTitle&&!missingSnippet&&!missingChips)return Promise.resolve();
+    if(!title||!snippet||!chips||!more){
+      return Promise.resolve();
+    }
 
     return fetch(more.href,{credentials:'same-origin'})
-      .then(function(response){if(!response.ok)throw new Error('HTTP '+response.status);return response.text();})
-      .then(function(html){
-        var doc=new DOMParser().parseFromString(html,'text/html');
+      .then(function(response){
+        if(!response.ok)throw new Error('HTTP '+response.status);
+        return response.text();
+      })
+      .then(function(page){
+        var doc=new DOMParser().parseFromString(page,'text/html');
 
-        if(missingTitle){
+        if(!normalize(title.textContent)){
           var sourceTitle=doc.querySelector('.content h1');
           var targetLink=title.querySelector('a');
-          if(sourceTitle&&targetLink)targetLink.textContent=sourceTitle.textContent.trim();
+          if(sourceTitle&&targetLink){
+            targetLink.textContent=normalize(sourceTitle.textContent);
+          }
         }
 
-        if(missingChips){
+        if(!normalize(chips.textContent)){
           var sourceChips=doc.querySelector('.content .chips');
           if(sourceChips){
             chips.innerHTML='';
             [].slice.call(sourceChips.querySelectorAll('.chip')).forEach(function(sourceChip){
-              var raw=(sourceChip.textContent||'').trim();
+              var raw=normalize(sourceChip.textContent);
               if(!raw)return;
+
               var chip=document.createElement('span');
               chip.className='chip';
               chip.setAttribute('data-raw',raw);
@@ -102,17 +151,18 @@
           }
         }
 
-        if(missingSnippet){
-          var body=doc.querySelector('.post-body');
-          if(body){
-            var text=(body.textContent||'').replace(/\s+/g,' ').trim();
-            if(text.length>170)text=text.slice(0,167).trim()+'...';
-            snippet.textContent=text;
-          }
+        var clean=naturalSnippet(doc);
+        if(clean){
+          snippet.textContent=clean;
+        }else{
+          snippet.textContent=shorten(snippet.textContent,180);
         }
       })
       .catch(function(error){
-        if(window.console&&console.warn)console.warn('Fusumi job-card fallback:',error);
+        snippet.textContent=shorten(snippet.textContent,180);
+        if(window.console&&console.warn){
+          console.warn('Fusumi job-card fallback:',error);
+        }
       });
   }
 
@@ -122,7 +172,9 @@
   Promise.all(jobs.map(hydrate)).then(function(){
     var search=document.getElementById('jobSearch');
     if(search){
-      setTimeout(function(){search.dispatchEvent(new Event('input',{bubbles:true}));},0);
+      setTimeout(function(){
+        search.dispatchEvent(new Event('input',{bubbles:true}));
+      },0);
     }
   });
 })();
