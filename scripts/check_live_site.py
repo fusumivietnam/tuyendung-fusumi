@@ -12,7 +12,11 @@ from urllib.parse import urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 DEFAULT_SITE = "https://tuyendung.fusumi.vn/"
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.2"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.3"
+
+
+class RateLimited(RuntimeError):
+    """Blogger refused the GitHub runner with HTTP 429 after all retries."""
 
 
 class PageParser(HTMLParser):
@@ -65,15 +69,17 @@ def fetch(url: str, retries: int = 5) -> str:
                 return response.read().decode("utf-8", errors="replace")
         except HTTPError as exc:
             last_error = exc
-            if exc.code == 429 and attempt < retries:
-                retry_after = exc.headers.get("Retry-After") if exc.headers else None
-                try:
-                    wait = int(retry_after) if retry_after else min(5 * (2 ** (attempt - 1)), 30)
-                except ValueError:
-                    wait = min(5 * (2 ** (attempt - 1)), 30)
-                print(f"WARN Blogger rate-limited {url}; retrying in {wait}s (attempt {attempt}/{retries})")
-                time.sleep(wait)
-                continue
+            if exc.code == 429:
+                if attempt < retries:
+                    retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                    try:
+                        wait = int(retry_after) if retry_after else min(5 * (2 ** (attempt - 1)), 30)
+                    except ValueError:
+                        wait = min(5 * (2 ** (attempt - 1)), 30)
+                    print(f"WARN Blogger rate-limited {url}; retrying in {wait}s (attempt {attempt}/{retries})")
+                    time.sleep(wait)
+                    continue
+                raise RateLimited(f"Blogger returned HTTP 429 for {url} after {retries} attempts") from exc
             if attempt < retries:
                 time.sleep(min(attempt * 3, 10))
         except (URLError, TimeoutError) as exc:
@@ -197,4 +203,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except RateLimited as exc:
+        print(f"INCONCLUSIVE: {exc}")
+        print("Blogger rate-limited the GitHub-hosted runner; source/browser contracts still determine CI health.")
