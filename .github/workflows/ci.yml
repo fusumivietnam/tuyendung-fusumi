@@ -31,6 +31,7 @@ jobs:
           test -f templates/mau-tin-tuyen-dung.md
           test -f templates/footer-contact.html
           test -f templates/fusumi-careers-runtime.html
+          test -f templates/fusumi-analytics-runtime.html
           test -f templates/pages/ve-fusumi.html
           test -f templates/pages/quy-trinh-tuyen-dung.html
           test -f templates/pages/ung-tuyen.html
@@ -39,6 +40,7 @@ jobs:
           test -f scripts/check_live_site.py
           test -f scripts/check_runtime_contract.py
           test -f tests/runtime.spec.js
+          test -f tests/analytics-runtime.spec.js
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
@@ -56,7 +58,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser runtime contracts
-        run: npx playwright test tests/runtime.spec.js --reporter=line --workers=1
+        run: npx playwright test tests/runtime.spec.js tests/analytics-runtime.spec.js --reporter=line --workers=1
 
       - name: Upload validated theme artifact
         uses: actions/upload-artifact@v4
