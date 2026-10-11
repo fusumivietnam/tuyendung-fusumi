@@ -4,21 +4,67 @@
 (function(){
   'use strict';
 
-  var GTM_ID='GTM-TLPRFXWF';
-  var GTM_SRC='https://www.googletagmanager.com/gtm.js?id='+encodeURIComponent(GTM_ID);
+  var MEASUREMENT_ID='G-6FN6HGQ5R8';
+  var GA_SRC='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(MEASUREMENT_ID);
 
-  function loadGTM(){
-    if(document.querySelector('script[data-fusumi-gtm]'))return;
-    window.dataLayer=window.dataLayer||[];
-    window.dataLayer.push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+  window.dataLayer=window.dataLayer||[];
+  window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};
+
+  function loadGA4(){
+    if(document.querySelector('script[data-fusumi-ga4]'))return;
 
     var script=document.createElement('script');
     script.async=true;
-    script.src=GTM_SRC;
-    script.setAttribute('data-fusumi-gtm',GTM_ID);
+    script.src=GA_SRC;
+    script.setAttribute('data-fusumi-ga4',MEASUREMENT_ID);
     document.head.appendChild(script);
+
+    window.gtag('js',new Date());
+    window.gtag('config',MEASUREMENT_ID,{
+      send_page_view:true
+    });
   }
 
-  loadGTM();
+  function applyContext(){
+    var params=new URLSearchParams(location.search);
+    var position=(params.get('vi-tri')||'').replace(/\s+/g,' ').trim();
+    var jobUrl=(params.get('job')||'').replace(/\s+/g,' ').trim();
+    return {position:position,jobUrl:jobUrl};
+  }
+
+  function trackApply(channel){
+    var context=applyContext();
+    window.gtag('event','fusumi_apply_click',{
+      apply_channel:channel,
+      job_position:context.position,
+      job_url:context.jobUrl
+    });
+  }
+
+  function bindApplyTracking(){
+    var form=document.querySelector('[data-apply-google-form]');
+    var mail=document.querySelector('[data-apply-email]');
+
+    if(form&&!form.getAttribute('data-ga4-bound')){
+      form.setAttribute('data-ga4-bound','1');
+      form.addEventListener('click',function(){trackApply('google_form');});
+    }
+
+    if(mail&&!mail.getAttribute('data-ga4-bound')){
+      mail.setAttribute('data-ga4-bound','1');
+      mail.addEventListener('click',function(){trackApply('email');});
+    }
+  }
+
+  function boot(){
+    loadGA4();
+    bindApplyTracking();
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot,{once:true});
+  }else{
+    boot();
+  }
 })();
 </script>
