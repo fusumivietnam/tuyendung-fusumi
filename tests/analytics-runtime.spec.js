@@ -8,8 +8,8 @@ const origin = 'http://fusumi.test';
 
 function fixture() {
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head><body>
-    <a data-apply-google-form href="https://docs.google.com/forms/d/e/test/viewform">Ứng tuyển qua Google Form</a>
-    <a data-apply-email href="mailto:hr@fusumi.vn">Gửi CV qua email</a>
+    <a data-apply-google-form href="#" onclick="event.preventDefault()">Ứng tuyển qua Google Form</a>
+    <a data-apply-email href="#" onclick="event.preventDefault()">Gửi CV qua email</a>
     ${analytics}
   </body></html>`;
 }
@@ -42,7 +42,7 @@ test('loads GA4 and sends careers application conversion', async ({ page }) => {
   let dl = await commands(page);
   expect(dl.some((entry) => Array.isArray(entry) && entry[0] === 'config' && entry[1] === 'G-6FN6HGQ5R8')).toBe(true);
 
-  await page.locator('[data-apply-google-form]').click({ noWaitAfter: true });
+  await page.locator('[data-apply-google-form]').click();
   dl = await commands(page);
 
   const event = dl.find((entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === 'fusumi_apply_click');
