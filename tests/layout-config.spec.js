@@ -105,7 +105,7 @@ test('Layout config overrides Apply Page path without rewriting contact links', 
   await page.goto(`${origin}/2026/10/ke-toan-noi-bo.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(20);
 
-  const apply = new URL(await page.locator('[data-apply-link]').getAttribute('href'));
+  const apply = new URL(await page.locator('[data-apply-link]').getAttribute('href'), origin);
   expect(apply.pathname).toBe('/p/nop-ho-so.html');
   expect(apply.searchParams.get('vi-tri')).toBe('Kế toán nội bộ');
   expect(await page.locator('a[href^="mailto:"]').getAttribute('href')).toBe('mailto:hr@fusumi.vn');
