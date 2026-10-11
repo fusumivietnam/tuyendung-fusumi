@@ -33,5 +33,6 @@ jobs:
           echo '- Site: https://tuyendung.fusumi.vn/' >> "$GITHUB_STEP_SUMMARY"
           echo '- Triggers: main update, manual dispatch, and daily at 08:00 Asia/Ho_Chi_Minh.' >> "$GITHUB_STEP_SUMMARY"
           echo '- Source contracts: centralized CSS, HTML-only Footer, runtime apply/JobPosting hooks, Page hooks.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Live checks: homepage, search, Pages, canonical URLs, job cards, runtime marker, discovered job detail, apply route with query parameters.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Note: client-injected JSON-LD execution is not evaluated by the stdlib HTTP job.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Live checks when Blogger accepts the runner: homepage, Page links, canonical URLs, job cards, runtime marker, one job detail, and the apply route.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- HTTP 429 after all retries is reported as inconclusive, not as a site regression, because Blogger can rate-limit GitHub-hosted runner IPs.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Client-side runtime behavior and JSON-LD execution are covered by the Playwright browser contracts in CI.' >> "$GITHUB_STEP_SUMMARY"
