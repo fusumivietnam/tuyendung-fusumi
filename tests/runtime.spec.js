@@ -7,6 +7,7 @@ const runtime = fs.readFileSync(path.join(ROOT, 'templates', 'fusumi-careers-run
 const origin = 'http://fusumi.test';
 const jobPath = '/2026/10/ke-toan-noi-bo.html';
 const jobUrl = origin + jobPath;
+const formUrl = 'https://docs.google.com/forms/d/e/FORM_ID/viewform';
 
 function documentHtml(body, head = '') {
   return `<!doctype html><html lang="vi"><head><meta charset="utf-8">${head}</head><body>${body}${runtime}</body></html>`;
@@ -35,12 +36,18 @@ function jobFixture() {
   `, `<link rel="canonical" href="${jobUrl}">`);
 }
 
-function applyFixture() {
+function applyFixture(configured = false) {
+  const attrs = configured
+    ? `data-google-form-url="${formUrl}" data-google-form-position-entry="entry.111" data-google-form-job-entry="entry.222"`
+    : 'data-google-form-url="" data-google-form-position-entry="" data-google-form-job-entry=""';
+
   return documentHtml(`
-    <main class="fusumi-apply-page">
+    <main class="fusumi-apply-page" ${attrs}>
       <h1>Ứng tuyển</h1>
       <p>Vị trí: <strong data-apply-position></strong></p>
       <a data-apply-job-link hidden href="#">Xem lại tin tuyển dụng</a>
+      <p data-apply-channel-note></p>
+      <a data-apply-google-form hidden href="#">Ứng tuyển qua Google Form</a>
       <a data-apply-email href="mailto:hr@fusumi.vn">Gửi CV qua email</a>
     </main>
   `, `<link rel="canonical" href="${origin}/p/ung-tuyen.html">`);
@@ -86,7 +93,11 @@ async function installRoutes(page) {
     }
 
     if (url.pathname === '/p/ung-tuyen.html') {
-      return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: applyFixture() });
+      return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: applyFixture(false) });
+    }
+
+    if (url.pathname === '/p/ung-tuyen-form.html') {
+      return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: applyFixture(true) });
     }
 
     if (url.pathname === '/listing') {
@@ -128,13 +139,15 @@ test('job CTA carries normalized position and canonical URL to Apply page', asyn
   expect(applyUrl.searchParams.get('job')).toBe(jobUrl);
 });
 
-test('Apply page prefills position, source job and HR email', async ({ page }) => {
+test('Apply page keeps email fallback when Google Form is not configured', async ({ page }) => {
   const url = `${origin}/p/ung-tuyen.html?vi-tri=${encodeURIComponent('Kế toán nội bộ')}&job=${encodeURIComponent(jobUrl)}`;
   await page.goto(url, { waitUntil: 'domcontentloaded' });
 
   await expect(page.locator('[data-apply-position]')).toHaveText('Kế toán nội bộ');
   await expect(page.locator('[data-apply-job-link]')).toBeVisible();
   await expect(page.locator('[data-apply-job-link]')).toHaveAttribute('href', jobUrl);
+  await expect(page.locator('[data-apply-google-form]')).toBeHidden();
+  await expect(page.locator('[data-apply-channel-note]')).toContainText('email tuyển dụng');
 
   const mailHref = await page.locator('[data-apply-email]').getAttribute('href');
   const mail = new URL(mailHref);
@@ -142,6 +155,36 @@ test('Apply page prefills position, source job and HR email', async ({ page }) =
   expect(decodeURIComponent(mail.pathname)).toBe('hr@fusumi.vn');
   expect(mail.searchParams.get('subject')).toContain('Ứng tuyển - Kế toán nội bộ');
   expect(mail.searchParams.get('body')).toContain(jobUrl);
+});
+
+test('configured Google Form receives prefilled position and job URL', async ({ page }) => {
+  const url = `${origin}/p/ung-tuyen-form.html?vi-tri=${encodeURIComponent('Kế toán nội bộ')}&job=${encodeURIComponent(jobUrl)}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+  const form = page.locator('[data-apply-google-form]');
+  await expect(form).toBeVisible();
+  await expect(form).toHaveAttribute('target', '_blank');
+  await expect(form).toHaveAttribute('rel', 'noopener');
+  await expect(page.locator('[data-apply-channel-note]')).toContainText('biểu mẫu');
+
+  const href = await form.getAttribute('href');
+  const target = new URL(href);
+  expect(target.origin).toBe('https://docs.google.com');
+  expect(target.searchParams.get('usp')).toBe('pp_url');
+  expect(target.searchParams.get('entry.111')).toBe('Kế toán nội bộ');
+  expect(target.searchParams.get('entry.222')).toBe(jobUrl);
+});
+
+test('apply channel clicks push structured dataLayer events', async ({ page }) => {
+  const url = `${origin}/p/ung-tuyen-form.html?vi-tri=${encodeURIComponent('Kế toán nội bộ')}&job=${encodeURIComponent(jobUrl)}`;
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+
+  await page.locator('[data-apply-email]').click({ noWaitAfter: true });
+  const emailEvent = await page.evaluate(() => window.dataLayer.at(-1));
+  expect(emailEvent.event).toBe('fusumi_apply_click');
+  expect(emailEvent.apply_channel).toBe('email');
+  expect(emailEvent.job_position).toBe('Kế toán nội bộ');
+  expect(emailEvent.job_url).toBe(jobUrl);
 });
 
 test('search accessibility state reacts to typing and Escape', async ({ page }) => {
