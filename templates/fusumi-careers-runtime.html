@@ -513,6 +513,20 @@
     syncClear();
   }
 
+  function isApplyLink(link){
+    if(link.hasAttribute('data-apply-link'))return true;
+
+    var href=normalize(link.getAttribute('href')||'');
+    if(/^(mailto:|tel:|sms:|javascript:)/i.test(href))return false;
+
+    try{
+      var target=new URL(href||'/p/ung-tuyen.html',location.origin);
+      if(target.origin===location.origin&&target.pathname==='/p/ung-tuyen.html')return true;
+    }catch(error){}
+
+    return /ứng tuyển/i.test(normalize(link.textContent));
+  }
+
   function enhanceApplyLinks(){
     var scope=document.querySelector('.content[itemtype*="JobPosting"]');
     if(!scope)return;
@@ -522,7 +536,7 @@
     var canonical=currentCanonical();
     if(!title)return;
 
-    [].slice.call(scope.querySelectorAll('.apply a,.job-cta a')).forEach(function(link){
+    [].slice.call(scope.querySelectorAll('.apply a,.job-cta a')).filter(isApplyLink).forEach(function(link){
       var url=new URL('/p/ung-tuyen.html',location.origin);
       url.searchParams.set('vi-tri',title);
       url.searchParams.set('job',canonical);
@@ -596,7 +610,7 @@
         'Tôi gửi hồ sơ ứng tuyển cho vị trí: '+(position||'................................'),
         jobUrl?'Tin tuyển dụng: '+jobUrl:'','',
         'Họ và tên:','Số điện thoại:','Link CV/Portfolio:','','Trân trọng.'
-      ].filter(Boolean);
+      ];
       mail.href='mailto:hr@fusumi.vn?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(lines.join('\n'));
       mail.addEventListener('click',function(){trackApply('email',position,jobUrl);});
     }
