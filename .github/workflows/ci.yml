@@ -41,6 +41,7 @@ jobs:
           test -f scripts/check_runtime_contract.py
           test -f tests/runtime.spec.js
           test -f tests/analytics-runtime.spec.js
+          test -f tests/apply-hardening.spec.js
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
@@ -58,7 +59,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run browser runtime contracts
-        run: npx playwright test tests/runtime.spec.js tests/analytics-runtime.spec.js --reporter=line --workers=1
+        run: npx playwright test tests/runtime.spec.js tests/analytics-runtime.spec.js tests/apply-hardening.spec.js --reporter=line --workers=1
 
       - name: Upload validated theme artifact
         uses: actions/upload-artifact@v4
