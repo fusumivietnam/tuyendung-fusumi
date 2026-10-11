@@ -12,7 +12,7 @@ from urllib.parse import urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 DEFAULT_SITE = "https://tuyendung.fusumi.vn/"
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.1"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.2"
 
 
 class PageParser(HTMLParser):
@@ -134,6 +134,16 @@ def assert_home_links(base: str, html: str) -> None:
     print("OK homepage Page links: Về Fusumi, Quy trình tuyển dụng, Ứng tuyển")
 
 
+def assert_home_ids(html: str) -> PageParser:
+    parsed = parse(html)
+    required = {"viec-lam", "jobSearch", "departmentFilter", "locationFilter", "typeFilter"}
+    missing = sorted(required - parsed.ids)
+    if missing:
+        fail(f"homepage is missing required element ID(s): {', '.join(missing)}")
+    print("OK homepage selectors: #viec-lam + search/filter controls")
+    return parsed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site", default=DEFAULT_SITE)
@@ -143,21 +153,15 @@ def main() -> None:
 
     base = args.site.rstrip("/") + "/"
 
-    # Request 1: homepage is the primary deployment probe.
     homepage = fetch(base)
     if len(homepage.strip()) < 500:
         fail(f"homepage looks unexpectedly empty ({len(homepage)} bytes)")
     print(f"OK homepage: {base} ({len(homepage)} bytes)")
 
-    assert_contains(
-        "homepage",
-        homepage,
-        ["Fusumi Careers", "Vị trí đang tuyển", "jobSearch", "departmentFilter", "locationFilter", "typeFilter"],
-    )
+    home = assert_home_ids(homepage)
     assert_canonical("homepage", base, homepage)
     assert_home_links(base, homepage)
 
-    home = parse(homepage)
     if home.job_count < args.min_jobs:
         fail(f"Insufficient job cards on homepage: {home.job_count}, required>={args.min_jobs}")
     print(f"OK job cards: homepage={home.job_count}")
@@ -172,7 +176,6 @@ def main() -> None:
 
     time.sleep(args.pace)
 
-    # Request 2: one representative job detail.
     post_html = fetch(post_url)
     assert_contains("job post", post_html, ["Ứng tuyển vị trí này", "JobPosting"])
     if "fusumi-careers-runtime" not in post_html:
@@ -182,7 +185,6 @@ def main() -> None:
 
     time.sleep(args.pace)
 
-    # Request 3: exact Apply route/query shape emitted by runtime.
     apply_base = urljoin(base, "p/ung-tuyen.html")
     apply_query = urlencode({"vi-tri": "Smoke Test", "job": post_url})
     apply_url = apply_base + "?" + apply_query
@@ -191,8 +193,6 @@ def main() -> None:
     assert_canonical("apply page", apply_base, apply_html)
     print(f"OK apply flow route: {apply_url}")
 
-    # Runtime JSON-LD is injected client-side, so stdlib HTTP cannot execute it. Static
-    # JobPosting/runtime contracts are checked separately by check_runtime_contract.py.
     print("Live smoke test passed.")
 
 
