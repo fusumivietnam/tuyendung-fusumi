@@ -33,7 +33,7 @@ function jobFixture() {
       </div>
       <div class="apply"><a href="/p/ung-tuyen.html">Ứng tuyển vị trí này</a></div>
     </main>
-  `, `<link rel="canonical" href="${jobUrl}">`);
+  `, '<meta name="description" content="Trang thông tin tuyển dụng chính thức của Fusumi Việt Nam">');
 }
 
 function applyFixture(configured = false) {
@@ -126,7 +126,25 @@ test('injects complete JobPosting JSON-LD from runtime data', async ({ page }) =
   expect(schema.jobLocation.address.addressLocality).toBe('Hà Nội');
   expect(schema.identifier.value).toContain('post-1134939156650530196');
   expect(schema.url).toBe(jobUrl);
+  expect(schema.directApply).toBe(false);
   expect(schema.description).toContain('Fusumi tuyển Kế toán nội bộ');
+  expect(schema.baseSalary).toBeUndefined();
+  expect(schema.employmentUnit).toBeUndefined();
+});
+
+test('creates canonical fallback and replaces generic meta description on job pages', async ({ page }) => {
+  await page.goto(`${jobUrl}?utm_source=test#apply`, { waitUntil: 'domcontentloaded' });
+
+  const canonical = page.locator('link[rel="canonical"]');
+  await expect(canonical).toHaveCount(1);
+  await expect(canonical).toHaveAttribute('href', jobUrl);
+
+  const descriptions = page.locator('meta[name="description"]');
+  await expect(descriptions).toHaveCount(1);
+  await expect(descriptions).toHaveAttribute(
+    'content',
+    'Fusumi Việt Nam tuyển Kế toán nội bộ tại Hà Nội, hình thức Full-time. Xem mô tả công việc, yêu cầu và cách ứng tuyển.'
+  );
 });
 
 test('job CTA carries normalized position and canonical URL to Apply page', async ({ page }) => {

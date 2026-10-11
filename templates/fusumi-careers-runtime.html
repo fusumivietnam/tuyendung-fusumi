@@ -230,7 +230,6 @@
     return n>0?n:null;
   }
 
-
   function tableValue(body,label){
     if(!body)return '';
     var rows=[].slice.call(body.querySelectorAll('tr'));
@@ -309,9 +308,58 @@
     return n>0?n:null;
   }
 
+  function canonicalFromLocation(){
+    try{
+      var parsed=new URL(location.href);
+      return parsed.origin+parsed.pathname;
+    }catch(error){
+      return location.href.split(/[?#]/)[0];
+    }
+  }
+
   function currentCanonical(){
     var link=document.querySelector('link[rel="canonical"]');
-    return link?link.href:location.href.split('#')[0];
+    if(link&&link.href){
+      try{
+        var parsed=new URL(link.href,location.origin);
+        return parsed.origin+parsed.pathname;
+      }catch(error){}
+    }
+    return canonicalFromLocation();
+  }
+
+  function ensureCanonical(){
+    var canonical=currentCanonical();
+    var link=document.querySelector('link[rel="canonical"]');
+    if(!link){
+      link=document.createElement('link');
+      link.rel='canonical';
+      document.head.appendChild(link);
+    }
+    link.href=canonical;
+    return canonical;
+  }
+
+  function jobMetaDescription(title,locationValue,typeValue){
+    var text='Fusumi Việt Nam tuyển '+title;
+    if(locationValue)text+=' tại '+locationValue;
+    if(typeValue)text+=', hình thức '+typeValue;
+    text+='. Xem mô tả công việc, yêu cầu và cách ứng tuyển.';
+    return shorten(text,155);
+  }
+
+  function ensureJobMetaDescription(title,locationValue,typeValue){
+    var content=jobMetaDescription(title,locationValue,typeValue);
+    var metas=[].slice.call(document.querySelectorAll('meta[name="description"]'));
+    var meta=metas.shift();
+    if(!meta){
+      meta=document.createElement('meta');
+      meta.name='description';
+      document.head.appendChild(meta);
+    }
+    meta.content=content;
+    metas.forEach(function(extra){extra.remove();});
+    return content;
   }
 
   function normalizeUrl(url){
@@ -361,10 +409,11 @@
     if(!schemaTitle||!description)return Promise.resolve();
 
     var labels=getRawLabels(scope);
-    var type=employmentType(labelValue(labels,'HT:'));
+    var typeValue=labelValue(labels,'HT:');
+    var type=employmentType(typeValue);
     var locationValue=labelValue(labels,'ĐĐ:');
-    var bodyText=normalize(body.textContent);
-    var canonical=currentCanonical();
+    var canonical=ensureCanonical();
+    ensureJobMetaDescription(schemaTitle,locationValue,typeValue);
 
     return bloggerPostMeta(canonical)
       .then(function(meta){
@@ -394,7 +443,6 @@
         if(loc)data.jobLocation=loc;
         if(openings)data.totalJobOpenings=openings;
 
-
         var old=document.getElementById('fusumi-jobposting-jsonld');
         if(old)old.remove();
         var script=document.createElement('script');
@@ -402,19 +450,11 @@
         script.type='application/ld+json';
         script.text=JSON.stringify(data);
         document.head.appendChild(script);
-
-        if(!document.querySelector('meta[name="description"]')){
-          var metaDescription=document.createElement('meta');
-          metaDescription.name='description';
-          metaDescription.content=naturalSnippet(document)||shorten(bodyText,155);
-          document.head.appendChild(metaDescription);
-        }
       })
       .catch(function(error){
         if(window.console&&console.warn)console.warn('Fusumi JobPosting:',error);
       });
   }
-
 
   function enhanceListingUX(){
     var count=document.getElementById('jobCount');
