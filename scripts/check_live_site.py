@@ -12,7 +12,7 @@ from urllib.parse import urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 DEFAULT_SITE = "https://tuyendung.fusumi.vn/"
-USER_AGENT = "FusumiCareersSmokeTest/2.0 (+https://github.com/fusumivietnam/tuyendung-fusumi)"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.1"
 
 
 class PageParser(HTMLParser):
@@ -22,7 +22,6 @@ class PageParser(HTMLParser):
         self.links: list[str] = []
         self.ids: set[str] = set()
         self.canonical: str | None = None
-        self.meta_description: str | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = dict(attrs)
@@ -36,15 +35,14 @@ class PageParser(HTMLParser):
             self.links.append(data["href"] or "")
         if tag == "link" and (data.get("rel") or "").lower() == "canonical" and data.get("href"):
             self.canonical = data["href"]
-        if tag == "meta" and (data.get("name") or "").lower() == "description":
-            self.meta_description = data.get("content") or ""
 
 
 def fail(message: str) -> None:
     raise SystemExit(f"ERROR: {message}")
 
 
-def fetch(url: str, retries: int = 3) -> str:
+def fetch(url: str, retries: int = 5) -> str:
+    """Fetch one public page with conservative Blogger 429 backoff."""
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
@@ -53,6 +51,7 @@ def fetch(url: str, retries: int = 3) -> str:
                 headers={
                     "User-Agent": USER_AGENT,
                     "Accept": "text/html,application/xhtml+xml",
+                    "Accept-Language": "vi,en;q=0.8",
                     "Cache-Control": "no-cache",
                 },
             )
@@ -64,10 +63,23 @@ def fetch(url: str, retries: int = 3) -> str:
                 if "text/html" not in content_type:
                     fail(f"{url} returned unexpected content type: {content_type}")
                 return response.read().decode("utf-8", errors="replace")
-        except (HTTPError, URLError, TimeoutError) as exc:
+        except HTTPError as exc:
+            last_error = exc
+            if exc.code == 429 and attempt < retries:
+                retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                try:
+                    wait = int(retry_after) if retry_after else min(5 * (2 ** (attempt - 1)), 30)
+                except ValueError:
+                    wait = min(5 * (2 ** (attempt - 1)), 30)
+                print(f"WARN Blogger rate-limited {url}; retrying in {wait}s (attempt {attempt}/{retries})")
+                time.sleep(wait)
+                continue
+            if attempt < retries:
+                time.sleep(min(attempt * 3, 10))
+        except (URLError, TimeoutError) as exc:
             last_error = exc
             if attempt < retries:
-                time.sleep(attempt * 2)
+                time.sleep(min(attempt * 3, 10))
     fail(f"Cannot fetch {url}: {last_error}")
 
 
@@ -98,94 +110,89 @@ def assert_canonical(name: str, url: str, html: str) -> None:
     print(f"OK canonical {name}: {parsed.canonical}")
 
 
-def discover_post(base_url: str, html_pages: list[str]) -> str | None:
+def discover_post(base_url: str, html: str) -> str | None:
     host = urlparse(base_url).netloc
-    pattern = re.compile(r"/\d{4}/\d{2}/[^?#]+\.html(?:[?#].*)?$")
-    for html in html_pages:
-        for href in parse(html).links:
-            absolute = urljoin(base_url, href)
-            parsed = urlparse(absolute)
-            if parsed.netloc == host and pattern.search(parsed.path):
-                return absolute.split("#", 1)[0].split("?", 1)[0]
+    pattern = re.compile(r"/\d{4}/\d{2}/[^?#]+\.html$")
+    for href in parse(html).links:
+        absolute = urljoin(base_url, href)
+        parsed = urlparse(absolute)
+        if parsed.netloc == host and pattern.search(parsed.path):
+            return absolute.split("#", 1)[0].split("?", 1)[0]
     return None
+
+
+def assert_home_links(base: str, html: str) -> None:
+    links = {normalize_url(urljoin(base, href)) for href in parse(html).links}
+    required = {
+        normalize_url(urljoin(base, "p/ve-fusumi.html")),
+        normalize_url(urljoin(base, "p/quy-trinh-tuyen-dung.html")),
+        normalize_url(urljoin(base, "p/ung-tuyen.html")),
+    }
+    missing = sorted(required - links)
+    if missing:
+        fail(f"homepage is missing required Page link(s): {', '.join(missing)}")
+    print("OK homepage Page links: Về Fusumi, Quy trình tuyển dụng, Ứng tuyển")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site", default=DEFAULT_SITE)
     parser.add_argument("--min-jobs", type=int, default=1)
+    parser.add_argument("--pace", type=float, default=4.0, help="seconds between successful public requests")
     args = parser.parse_args()
 
     base = args.site.rstrip("/") + "/"
-    pages = {
-        "homepage": base,
-        "search": urljoin(base, "search"),
-        "about": urljoin(base, "p/ve-fusumi.html"),
-        "process": urljoin(base, "p/quy-trinh-tuyen-dung.html"),
-        "apply": urljoin(base, "p/ung-tuyen.html"),
-    }
 
-    html: dict[str, str] = {}
-    for name, url in pages.items():
-        html[name] = fetch(url)
-        if len(html[name].strip()) < 500:
-            fail(f"{name} looks unexpectedly empty ({len(html[name])} bytes)")
-        print(f"OK {name}: {url} ({len(html[name])} bytes)")
+    # Request 1: homepage is the primary deployment probe.
+    homepage = fetch(base)
+    if len(homepage.strip()) < 500:
+        fail(f"homepage looks unexpectedly empty ({len(homepage)} bytes)")
+    print(f"OK homepage: {base} ({len(homepage)} bytes)")
 
     assert_contains(
         "homepage",
-        html["homepage"],
+        homepage,
         ["Fusumi Careers", "Vị trí đang tuyển", "jobSearch", "departmentFilter", "locationFilter", "typeFilter"],
     )
-    assert_contains("search", html["search"], ["Vị trí đang tuyển"])
-    assert_contains("about", html["about"], ["Fusumi", "Xem vị trí đang tuyển"])
-    assert_contains("process", html["process"], ["Quy trình", "Ứng tuyển ngay"])
-    assert_contains("apply", html["apply"], ["Ứng tuyển", "Gửi CV qua email"])
+    assert_canonical("homepage", base, homepage)
+    assert_home_links(base, homepage)
 
-    # Public pages should preserve canonical URLs.
-    assert_canonical("homepage", pages["homepage"], html["homepage"])
-    assert_canonical("about", pages["about"], html["about"])
-    assert_canonical("process", pages["process"], html["process"])
-    assert_canonical("apply", pages["apply"], html["apply"])
+    home = parse(homepage)
+    if home.job_count < args.min_jobs:
+        fail(f"Insufficient job cards on homepage: {home.job_count}, required>={args.min_jobs}")
+    print(f"OK job cards: homepage={home.job_count}")
 
-    home_parser = parse(html["homepage"])
-    search_parser = parse(html["search"])
-    home_jobs = home_parser.job_count
-    search_jobs = search_parser.job_count
-    if max(home_jobs, search_jobs) < args.min_jobs:
-        fail(
-            f"No sufficient job cards detected: homepage={home_jobs}, search={search_jobs}, "
-            f"required>={args.min_jobs}"
-        )
-    print(f"OK job cards: homepage={home_jobs}, search={search_jobs}")
-
-    # Runtime gadget is rendered server-side as source HTML even though its JS runs client-side.
-    if "fusumi-careers-runtime" not in html["homepage"]:
+    if "fusumi-careers-runtime" not in homepage:
         fail("homepage is missing Fusumi Careers Runtime gadget marker")
     print("OK runtime gadget marker on homepage")
 
-    post_url = discover_post(base, [html["homepage"], html["search"]])
+    post_url = discover_post(base, homepage)
     if not post_url:
-        fail("Could not discover a published job Post URL from homepage/search")
+        fail("Could not discover a published job Post URL from homepage")
 
+    time.sleep(args.pace)
+
+    # Request 2: one representative job detail.
     post_html = fetch(post_url)
-    post_parser = parse(post_html)
     assert_contains("job post", post_html, ["Ứng tuyển vị trí này", "JobPosting"])
     if "fusumi-careers-runtime" not in post_html:
         fail("job post is missing Fusumi Careers Runtime gadget marker")
     assert_canonical("job post", post_url, post_html)
     print(f"OK job post: {post_url}")
 
-    # Verify the apply Page remains reachable with the exact query shape emitted by runtime.
+    time.sleep(args.pace)
+
+    # Request 3: exact Apply route/query shape emitted by runtime.
+    apply_base = urljoin(base, "p/ung-tuyen.html")
     apply_query = urlencode({"vi-tri": "Smoke Test", "job": post_url})
-    apply_url = pages["apply"] + "?" + apply_query
+    apply_url = apply_base + "?" + apply_query
     apply_html = fetch(apply_url)
     assert_contains("apply flow", apply_html, ["Gửi CV qua email", "data-apply-position", "data-apply-email"])
+    assert_canonical("apply page", apply_base, apply_html)
     print(f"OK apply flow route: {apply_url}")
 
-    # Runtime JSON-LD is injected client-side, so stdlib HTTP cannot execute it. We still require
-    # the static JobPosting marker and runtime source marker above; browser-level execution is
-    # covered manually until a headless-browser job is introduced.
+    # Runtime JSON-LD is injected client-side, so stdlib HTTP cannot execute it. Static
+    # JobPosting/runtime contracts are checked separately by check_runtime_contract.py.
     print("Live smoke test passed.")
 
 
