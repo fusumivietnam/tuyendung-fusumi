@@ -4,58 +4,67 @@
 (function(){
   'use strict';
 
-  var MEASUREMENT_ID='G-6FN6HGQ5R8';
-  var GA_SRC='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(MEASUREMENT_ID);
+  var DEFAULT_MEASUREMENT_ID='G-6FN6HGQ5R8';
 
-  window.dataLayer=window.dataLayer||[];
-  var nativePush=window.dataLayer.push.bind(window.dataLayer);
-
-  window.gtag=window.gtag||function(){
-    nativePush(arguments);
-  };
-
-  function sendApplyEvent(item){
-    if(!item||item.event!=='fusumi_apply_click')return;
-    window.gtag('event','fusumi_apply_click',{
-      apply_channel:item.apply_channel||'',
-      job_position:item.job_position||'',
-      job_url:item.job_url||''
-    });
+  function measurementId(){
+    var config=document.getElementById('fusumi-careers-config');
+    var value=config?(config.getAttribute('data-ga4-measurement-id')||'').trim():'';
+    return /^G-[A-Z0-9]+$/i.test(value)?value:DEFAULT_MEASUREMENT_ID;
   }
 
-  function installDataLayerBridge(){
-    if(window.dataLayer.__fusumiGa4Bridge)return;
+  function boot(){
+    var id=measurementId();
+    var gaSrc='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
 
-    window.dataLayer.push=function(){
-      var items=[].slice.call(arguments);
-      var result=nativePush.apply(null,items);
-      items.forEach(sendApplyEvent);
-      return result;
+    window.dataLayer=window.dataLayer||[];
+    var nativePush=window.dataLayer.push.bind(window.dataLayer);
+
+    window.gtag=window.gtag||function(){
+      nativePush(arguments);
     };
-    window.dataLayer.__fusumiGa4Bridge=true;
 
-    window.dataLayer.slice().forEach(function(item){
-      if(Object.prototype.toString.call(item)==='[object Object]')sendApplyEvent(item);
-    });
-  }
+    function sendApplyEvent(item){
+      if(!item||item.event!=='fusumi_apply_click')return;
+      window.gtag('event','fusumi_apply_click',{
+        apply_channel:item.apply_channel||'',
+        job_position:item.job_position||'',
+        job_url:item.job_url||''
+      });
+    }
 
-  function loadGA4(){
+    if(!window.dataLayer.__fusumiGa4Bridge){
+      window.dataLayer.push=function(){
+        var items=[].slice.call(arguments);
+        var result=nativePush.apply(null,items);
+        items.forEach(sendApplyEvent);
+        return result;
+      };
+      window.dataLayer.__fusumiGa4Bridge=true;
+
+      window.dataLayer.slice().forEach(function(item){
+        if(Object.prototype.toString.call(item)==='[object Object]')sendApplyEvent(item);
+      });
+    }
+
     if(!document.querySelector('script[data-fusumi-ga4]')){
       var script=document.createElement('script');
       script.async=true;
-      script.src=GA_SRC;
-      script.setAttribute('data-fusumi-ga4',MEASUREMENT_ID);
+      script.src=gaSrc;
+      script.setAttribute('data-fusumi-ga4',id);
       document.head.appendChild(script);
     }
 
     if(!window.__fusumiGa4Configured){
       window.gtag('js',new Date());
-      window.gtag('config',MEASUREMENT_ID,{send_page_view:true});
-      window.__fusumiGa4Configured=true;
+      window.gtag('config',id,{send_page_view:true});
+      window.__fusumiGa4Configured=id;
     }
   }
 
-  installDataLayerBridge();
-  loadGA4();
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',boot,{once:true});
+  }else{
+    boot();
+  }
 })();
 </script>
