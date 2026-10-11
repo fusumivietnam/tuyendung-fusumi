@@ -10,16 +10,15 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "templates" / "fusumi-careers-runtime.html"
 FOOTER = ROOT / "templates" / "footer-contact.html"
 CSS = ROOT / "blogger" / "fusumi-careers-custom.css"
 PAGES = {
-    "about": ROOT / "templates" / "page-ve-fusumi.html",
-    "process": ROOT / "templates" / "page-quy-trinh-tuyen-dung.html",
-    "apply": ROOT / "templates" / "page-ung-tuyen.html",
+    "about": ROOT / "templates" / "pages" / "ve-fusumi.html",
+    "process": ROOT / "templates" / "pages" / "quy-trinh-tuyen-dung.html",
+    "apply": ROOT / "templates" / "pages" / "ung-tuyen.html",
 }
 
 
