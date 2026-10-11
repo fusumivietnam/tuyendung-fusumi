@@ -31,9 +31,9 @@ jobs:
           test -f templates/mau-tin-tuyen-dung.md
           test -f templates/footer-contact.html
           test -f templates/fusumi-careers-runtime.html
-          test -f templates/page-ve-fusumi.html
-          test -f templates/page-quy-trinh-tuyen-dung.html
-          test -f templates/page-ung-tuyen.html
+          test -f templates/pages/ve-fusumi.html
+          test -f templates/pages/quy-trinh-tuyen-dung.html
+          test -f templates/pages/ung-tuyen.html
           test -f blogger/fusumi-careers-custom.css
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
