@@ -8,76 +8,54 @@ Blogger HTML/JavaScript gadget không cung cấp custom option fields kiểu for
 
 1. Native Blogger widget settings — nên dùng khi Blogger đã hỗ trợ sẵn.
 2. HTML/JavaScript gadget có tên rõ ràng — dùng cho block nội dung hoặc runtime tách biệt.
-3. Config gadget tự định nghĩa bằng `data-*` — chỉ nên dùng khi runtime đã có contract/test đọc cấu hình đó; không triển khai ad-hoc dựa vào thứ tự load gadget.
+3. Config gadget tự định nghĩa bằng `data-*` — chỉ dùng khi đã có regression tests và fallback an toàn.
 
-## Đang phù hợp để quản lý qua Layout
+## Layout hiện tại
 
-### Native widgets
+Các gadget nên có tên rõ ràng trong Blogger Layout:
 
-- Header / logo: dùng native `Header1`.
-- Navigation pages: dùng native `PageList1`.
-- Footer: dùng HTML/JavaScript gadget riêng.
-- Careers runtime: HTML/JavaScript gadget riêng.
-- Analytics runtime: HTML/JavaScript gadget riêng.
-
-### Tên gadget
-
-Nên đặt tên rõ ràng để nhận diện trong Layout:
-
+- `Fusumi Careers Config`
 - `Fusumi Careers Runtime`
 - `Fusumi Analytics Runtime`
 - `Fusumi Footer Contact`
 
-Frontend có thể ẩn title của runtime bằng CSS theo marker bên trong gadget; không nên để gadget không tên vì khó vận hành.
+Config gadget dùng source:
 
-## Có thể đưa thành Layout config trong phase tiếp theo
+`templates/fusumi-careers-config.html`
 
-Các giá trị dưới đây là ứng viên tốt cho một gadget `Fusumi Careers Config` khi runtime đã có regression tests đọc config:
+## Option đã hỗ trợ qua `Fusumi Careers Config`
 
-- HR email.
-- HR phone.
-- Apply Page path.
-- Google Form URL.
-- Google Form position entry ID.
-- Google Form job URL entry ID.
-- GA4 Measurement ID.
-- Organization name / URL / logo nếu có nhu cầu thay đổi.
+- HR email — `data-hr-email`
+- Apply Page path — `data-apply-page`
+- Google Form URL — `data-google-form-url`
+- Google Form position entry — `data-google-form-position-entry`
+- Google Form job URL entry — `data-google-form-job-entry`
+- GA4 Measurement ID — `data-ga4-measurement-id`
 
-Config gadget dự kiến chỉ chứa một marker duy nhất, ví dụ:
+Production template hiện dùng đúng Google Form và GA4 đang hoạt động.
 
-```html
-<div id="fusumi-careers-config"
-     data-hr-email="hr@fusumi.vn"
-     data-hr-phone="0797139999"
-     data-apply-page="/p/ung-tuyen.html"
-     data-google-form-url="https://docs.google.com/forms/d/e/.../viewform"
-     data-google-form-position-entry="entry.348709449"
-     data-google-form-job-entry="entry.3122690363"
-     data-ga4-id="G-6FN6HGQ5R8"
-     hidden></div>
-```
+## Cơ chế fallback
 
-Runtime phải đọc config theo nguyên tắc:
+- Nếu Config gadget bị xóa, Careers Runtime vẫn dùng Apply Page/Google Form attributes đang có trên Page và email production hiện tại.
+- Analytics Runtime fallback về `G-6FN6HGQ5R8` nếu không có config hoặc GA4 ID sai định dạng.
+- Config gadget có thể nằm trước hoặc sau hai runtime trong Layout; test browser cover trường hợp config nằm sau cả hai runtime.
+- Apply Page path chỉ được override bằng URL cùng origin; `mailto:`, `tel:`, `sms:` không bị rewrite.
 
-- config hợp lệ → dùng config;
-- config thiếu / sai → dùng default an toàn trong source;
-- không được làm hỏng Apply flow nếu config gadget bị xóa;
-- không phụ thuộc config gadget phải nằm trước hay sau runtime trong Layout;
-- Playwright phải cover cả trạng thái có config và không có config.
+## Không đưa vào Layout option
 
-## Không nên đưa thành Layout option
+Các phần sau tiếp tục nằm trong GitHub source + PR + CI:
 
+- Organization name / URL / logo dùng cho JobPosting.
 - Logic tạo JobPosting JSON-LD.
-- Selector DOM.
-- Regex parse ngày / số lượng.
-- Logic canonical/meta description.
-- Code analytics bridge.
+- Selector DOM và regex parse dữ liệu job.
+- Canonical và meta description.
+- Analytics event bridge.
 - Search/filter behavior.
 - CI / smoke-test settings.
 
-Các phần này phải tiếp tục nằm trong GitHub source + PR + CI để tránh chỉnh nhầm trực tiếp trên production.
+Organization/schema cố ý không đưa vào Config gadget vì cấu hình sai có thể làm structured data lệch khỏi nội dung visible hoặc gây lỗi Rich Results.
 
-## Nội dung nên nằm ở Post/Page thay vì Layout
+## Nội dung nằm ở Blogger Post/Page
 
 - Tên vị trí.
 - Mô tả công việc.
@@ -89,16 +67,16 @@ Các phần này phải tiếp tục nằm trong GitHub source + PR + CI để t
 - Mức lương nếu có.
 - Số lượng tuyển.
 
-Dữ liệu theo từng job phải là visible content/labels của Blogger Post để structured data không tách rời nội dung mà người dùng nhìn thấy.
+Dữ liệu theo từng job phải là visible content/labels của Blogger Post để structured data không tách rời nội dung người dùng nhìn thấy.
 
-## Khuyến nghị triển khai
+## Ẩn title runtime/config trên frontend
 
-Giữ kiến trúc hiện tại trong production. Chỉ triển khai `Fusumi Careers Config` khi có một PR riêng cập nhật đồng thời:
+Nên đặt tên gadget để dễ nhận diện trong Layout, sau đó ẩn riêng title của các gadget kỹ thuật bằng CSS theo marker bên trong gadget. Không nên để gadget không tên.
 
-- `templates/fusumi-careers-runtime.html`;
-- `templates/fusumi-analytics-runtime.html`;
-- Apply Page fallback;
-- Playwright contracts;
-- tài liệu cài đặt Blogger.
+Các marker hiện có:
 
-Như vậy Layout trở thành nơi chỉnh **giá trị cấu hình**, còn GitHub vẫn là source-of-truth cho **logic**.
+- `#fusumi-careers-config`
+- `#fusumi-careers-runtime`
+- `#fusumi-analytics-runtime`
+
+CSS production nên dùng selector theo các marker trên, không ẩn title của toàn bộ HTML/JavaScript widget.
