@@ -20,18 +20,28 @@ jobs:
       - name: Validate Blogger theme
         run: python scripts/validate_theme.py
 
+      - name: Validate Blogger runtime contracts
+        run: python scripts/check_runtime_contract.py
+
       - name: Validate repository files
         shell: bash
         run: |
           test -f README.md
           test -f docs/cai-dat-blogger.md
           test -f templates/mau-tin-tuyen-dung.md
+          test -f templates/footer-contact.html
+          test -f templates/fusumi-careers-runtime.html
+          test -f templates/page-ve-fusumi.html
+          test -f templates/page-quy-trinh-tuyen-dung.html
+          test -f templates/page-ung-tuyen.html
+          test -f blogger/fusumi-careers-custom.css
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
+          test -f scripts/check_runtime_contract.py
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
-        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py
 
       - name: Upload validated theme artifact
         uses: actions/upload-artifact@v4
