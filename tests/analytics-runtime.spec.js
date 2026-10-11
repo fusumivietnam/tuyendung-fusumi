@@ -21,7 +21,7 @@ async function commands(page) {
   }));
 }
 
-test('loads GA4 and sends careers application conversion', async ({ page }) => {
+test('loads GA4 and bridges careers dataLayer conversion without DOM click binding', async ({ page }) => {
   await page.route(`${origin}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/p/ung-tuyen.html') {
@@ -39,15 +39,47 @@ test('loads GA4 and sends careers application conversion', async ({ page }) => {
   await expect(loader).toHaveCount(1);
   await expect(loader).toHaveAttribute('src', /googletagmanager\.com\/gtag\/js\?id=G-6FN6HGQ5R8/);
 
+  await expect(page.locator('[data-apply-google-form]')).not.toHaveAttribute('data-ga4-bound', '1');
+  await expect(page.locator('[data-apply-email]')).not.toHaveAttribute('data-ga4-bound', '1');
+
   let dl = await commands(page);
   expect(dl.some((entry) => Array.isArray(entry) && entry[0] === 'config' && entry[1] === 'G-6FN6HGQ5R8')).toBe(true);
 
-  await page.locator('[data-apply-google-form]').click();
-  dl = await commands(page);
+  await page.evaluate(({ jobUrl }) => {
+    window.dataLayer.push({
+      event: 'fusumi_apply_click',
+      apply_channel: 'google_form',
+      job_position: 'Kế toán nội bộ',
+      job_url: jobUrl
+    });
+  }, { jobUrl });
 
-  const event = dl.find((entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === 'fusumi_apply_click');
-  expect(event).toBeTruthy();
-  expect(event[2].apply_channel).toBe('google_form');
-  expect(event[2].job_position).toBe('Kế toán nội bộ');
-  expect(event[2].job_url).toBe(jobUrl);
+  dl = await commands(page);
+  const rawEvents = dl.filter((entry) => entry && !Array.isArray(entry) && entry.event === 'fusumi_apply_click');
+  const gaEvents = dl.filter((entry) => Array.isArray(entry) && entry[0] === 'event' && entry[1] === 'fusumi_apply_click');
+
+  expect(rawEvents).toHaveLength(1);
+  expect(gaEvents).toHaveLength(1);
+  expect(gaEvents[0][2].apply_channel).toBe('google_form');
+  expect(gaEvents[0][2].job_position).toBe('Kế toán nội bộ');
+  expect(gaEvents[0][2].job_url).toBe(jobUrl);
+});
+
+test('does not duplicate loader or config when analytics runtime boots twice', async ({ page }) => {
+  await page.route(`${origin}/**`, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/p/ung-tuyen.html') {
+      return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: fixture() });
+    }
+    return route.fulfill({ status: 404, body: 'Not found' });
+  });
+
+  await page.route('https://www.googletagmanager.com/**', (route) => route.abort());
+  await page.goto(`${origin}/p/ung-tuyen.html`, { waitUntil: 'domcontentloaded' });
+  await page.addScriptTag({ content: analytics.match(/<script>([\s\S]*)<\/script>/)[1] });
+
+  await expect(page.locator('script[data-fusumi-ga4="G-6FN6HGQ5R8"]')).toHaveCount(1);
+  const dl = await commands(page);
+  const configs = dl.filter((entry) => Array.isArray(entry) && entry[0] === 'config' && entry[1] === 'G-6FN6HGQ5R8');
+  expect(configs).toHaveLength(1);
 });
