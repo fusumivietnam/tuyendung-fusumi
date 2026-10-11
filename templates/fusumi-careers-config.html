@@ -1,0 +1,72 @@
+<div id="fusumi-careers-config"
+     hidden="hidden"
+     aria-hidden="true"
+     data-hr-email="hr@fusumi.vn"
+     data-apply-page="/p/ung-tuyen.html"
+     data-google-form-url="https://docs.google.com/forms/d/e/1FAIpQLSeyECTrHxPiYbIwDSp6Y7zBbc2QFoYpQLLD1IYXdldQHhWpkg/viewform"
+     data-google-form-position-entry="entry.348709449"
+     data-google-form-job-entry="entry.3122690363"
+     data-ga4-measurement-id="G-6FN6HGQ5R8"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var root=document.getElementById('fusumi-careers-config');
+  if(!root)return;
+
+  function value(name){return (root.getAttribute(name)||'').trim();}
+
+  function applyFormConfig(){
+    var page=document.querySelector('.fusumi-apply-page');
+    if(!page)return;
+    var formUrl=value('data-google-form-url');
+    var positionEntry=value('data-google-form-position-entry');
+    var jobEntry=value('data-google-form-job-entry');
+    if(formUrl)page.setAttribute('data-google-form-url',formUrl);
+    if(/^entry\.\d+$/.test(positionEntry))page.setAttribute('data-google-form-position-entry',positionEntry);
+    if(/^entry\.\d+$/.test(jobEntry))page.setAttribute('data-google-form-job-entry',jobEntry);
+  }
+
+  function applyOperationalOverrides(){
+    var email=value('data-hr-email');
+    if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      var mail=document.querySelector('[data-apply-email]');
+      if(mail){
+        var href=mail.getAttribute('href')||'';
+        mail.setAttribute('href',href.replace(/^mailto:[^?]*/i,'mailto:'+email));
+      }
+    }
+
+    var applyPage=value('data-apply-page');
+    if(applyPage){
+      try{
+        var target=new URL(applyPage,location.origin);
+        if(target.origin===location.origin){
+          [].slice.call(document.querySelectorAll('.content[itemtype*="JobPosting"] .apply a,.content[itemtype*="JobPosting"] .job-cta a')).forEach(function(link){
+            var href=link.getAttribute('href')||'';
+            if(/^(mailto:|tel:|sms:|javascript:)/i.test(href))return;
+            if(!/ứng tuyển/i.test((link.textContent||'').trim())&&link.getAttribute('data-apply-link')===null)return;
+            var current=new URL(href||'/p/ung-tuyen.html',location.origin);
+            current.pathname=target.pathname;
+            link.href=current.pathname+current.search;
+          });
+        }
+      }catch(error){}
+    }
+  }
+
+  applyFormConfig();
+
+  function ready(){
+    applyFormConfig();
+    setTimeout(applyOperationalOverrides,0);
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',ready,{once:true});
+  }else{
+    ready();
+  }
+})();
+</script>
