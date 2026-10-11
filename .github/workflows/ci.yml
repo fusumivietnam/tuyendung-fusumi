@@ -38,10 +38,25 @@ jobs:
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
           test -f scripts/check_runtime_contract.py
+          test -f tests/runtime.spec.js
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
         run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright test runner
+        run: npm install --no-save @playwright/test@1.55.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser runtime contracts
+        run: npx playwright test tests/runtime.spec.js --reporter=line --workers=1
 
       - name: Upload validated theme artifact
         uses: actions/upload-artifact@v4
