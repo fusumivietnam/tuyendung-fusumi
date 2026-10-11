@@ -2,7 +2,10 @@ name: Live Smoke Test
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
   schedule:
+    # 08:00 Asia/Ho_Chi_Minh
     - cron: '0 1 * * *'
 
 permissions:
@@ -16,11 +19,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate runtime source contracts
+        run: python scripts/check_runtime_contract.py
+
       - name: Check deployed Blogger site
         run: python scripts/check_live_site.py --site https://tuyendung.fusumi.vn/ --min-jobs 1
 
       - name: Summary
         if: always()
         run: |
-          echo 'Site: https://tuyendung.fusumi.vn/' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Checks: homepage, search, static pages, job cards, one discovered job Post, JobPosting marker.' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Fusumi Careers live smoke test' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Site: https://tuyendung.fusumi.vn/' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Triggers: main update, manual dispatch, and daily at 08:00 Asia/Ho_Chi_Minh.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Source contracts: centralized CSS, HTML-only Footer, runtime apply/JobPosting hooks, Page hooks.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Live checks: homepage, search, Pages, canonical URLs, job cards, runtime marker, discovered job detail, apply route with query parameters.' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Note: client-injected JSON-LD execution is not evaluated by the stdlib HTTP job.' >> "$GITHUB_STEP_SUMMARY"
