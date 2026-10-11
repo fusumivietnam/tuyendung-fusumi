@@ -58,6 +58,11 @@ def main() -> None:
             "jobLocation",
             "enhanceApplyLinks",
             "enhanceApplyPage",
+            "googleFormUrl",
+            "data-google-form-url",
+            "data-apply-google-form",
+            "fusumi_apply_click",
+            "apply_channel",
             "url.searchParams.set('vi-tri',title)",
             "url.searchParams.set('job',canonical)",
             "mailto:hr@fusumi.vn",
@@ -102,7 +107,17 @@ def main() -> None:
     require(
         "apply page",
         pages["apply"],
-        ["fusumi-apply-page", "data-apply-position", "data-apply-email", "Gửi CV qua email"],
+        [
+            "fusumi-apply-page",
+            "data-apply-position",
+            "data-apply-email",
+            "data-apply-google-form",
+            "data-apply-channel-note",
+            "data-google-form-url",
+            "data-google-form-position-entry",
+            "data-google-form-job-entry",
+            "Gửi CV qua email",
+        ],
     )
 
     # Guard against accidentally restoring theme-inline CSS/JS into Page templates.
@@ -115,7 +130,8 @@ def main() -> None:
     print("Runtime contract validation passed.")
     print("- CSS is centralized in blogger/fusumi-careers-custom.css")
     print("- Footer is HTML-only")
-    print("- Runtime owns apply flow + JobPosting JSON-LD")
+    print("- Runtime owns apply flow + Google Form prefill + JobPosting JSON-LD")
+    print("- Apply Page keeps email fallback when Google Form is not configured")
     print("- Static Page templates expose expected runtime hooks")
 
 
