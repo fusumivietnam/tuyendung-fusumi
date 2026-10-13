@@ -16,6 +16,7 @@
   if(!root)return;
 
   function value(name){return (root.getAttribute(name)||'').trim();}
+  function normalize(text){return (text||'').replace(/\s+/g,' ').trim();}
 
   function applyFormConfig(){
     var page=document.querySelector('.fusumi-apply-page');
@@ -56,11 +57,94 @@
     }
   }
 
+  function deadlineFromText(text){
+    var match=normalize(text).match(/Hạn ứng tuyển\s*:\s*(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/i);
+    if(!match)return '';
+    var raw=match[1],y,m,d;
+    if(/^\d{4}-/.test(raw)){
+      var iso=raw.split('-');
+      y=iso[0];m=iso[1];d=iso[2];
+    }else{
+      var parts=raw.split(/[\/.-]/);
+      d=parts[0];m=parts[1];y=parts[2];
+    }
+    m=('0'+m).slice(-2);
+    d=('0'+d).slice(-2);
+    return y+'-'+m+'-'+d+'T23:59:59+07:00';
+  }
+
+  function deadlineFromBody(body){
+    if(!body)return '';
+    var rows=[].slice.call(body.querySelectorAll('tr'));
+    for(var i=0;i<rows.length;i++){
+      var cells=rows[i].querySelectorAll('th,td');
+      if(cells.length<2)continue;
+      if(/^hạn ứng tuyển/i.test(normalize(cells[0].textContent))){
+        return deadlineFromText('Hạn ứng tuyển: '+normalize(cells[1].textContent).replace(/^\[|\]$/g,''));
+      }
+    }
+    return deadlineFromText(body.textContent||'');
+  }
+
+  function isApplyLink(link){
+    var href=normalize(link.getAttribute('href')||'');
+    if(/^(mailto:|tel:|sms:|javascript:)/i.test(href))return false;
+    return link.hasAttribute('data-apply-link')||/ứng tuyển/i.test(normalize(link.textContent));
+  }
+
+  function removeJobPostingJsonLd(){
+    var node=document.getElementById('fusumi-jobposting-jsonld');
+    if(node)node.remove();
+  }
+
+  function enforceJobLifecycle(){
+    var scope=document.querySelector('.content[itemtype*="JobPosting"]');
+    if(!scope)return;
+    var body=scope.querySelector('.post-body');
+    if(!body)return;
+
+    var validThrough=deadlineFromBody(body);
+    if(!validThrough)return;
+    var expires=Date.parse(validThrough);
+    if(isNaN(expires)||Date.now()<=expires)return;
+
+    scope.classList.add('job-expired');
+    scope.setAttribute('data-job-status','expired');
+
+    var status=scope.querySelector('[data-job-status-message]');
+    if(!status){
+      status=document.createElement('p');
+      status.className='job-status job-status-expired';
+      status.setAttribute('data-job-status-message','');
+      var h1=scope.querySelector('h1');
+      if(h1&&h1.parentNode)h1.parentNode.insertBefore(status,h1.nextSibling);
+      else scope.insertBefore(status,scope.firstChild);
+    }
+    status.textContent='Đã hết hạn tuyển';
+
+    [].slice.call(scope.querySelectorAll('.apply a,.job-cta a')).filter(isApplyLink).forEach(function(link){
+      link.removeAttribute('href');
+      link.setAttribute('aria-disabled','true');
+      link.setAttribute('tabindex','-1');
+      link.classList.add('is-disabled');
+    });
+
+    removeJobPostingJsonLd();
+    if(document.head&&!document.head.__fusumiExpiryObserver){
+      var observer=new MutationObserver(removeJobPostingJsonLd);
+      observer.observe(document.head,{childList:true});
+      document.head.__fusumiExpiryObserver=observer;
+    }
+  }
+
   applyFormConfig();
 
   function ready(){
     applyFormConfig();
-    setTimeout(applyOperationalOverrides,0);
+    setTimeout(function(){
+      applyOperationalOverrides();
+      enforceJobLifecycle();
+    },0);
   }
 
   if(document.readyState==='loading'){
