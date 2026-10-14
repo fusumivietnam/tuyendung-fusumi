@@ -2,17 +2,15 @@
 
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
+import { discoverLiveJobs } from './live_jobs.mjs';
 
 const SITE = 'https://tuyendung.fusumi.vn';
-const JOBS = [
-  `${SITE}/2026/10/ke-toan-noi-bo.html`,
-  `${SITE}/2026/10/nvkd-thi-truong-khu-vuc-mien-tru.html`,
-];
 const GENERIC_DESCRIPTION = 'Trang thông tin tuyển dụng chính thức của Fusumi Việt Nam';
 const report = {
   checkedAt: new Date().toISOString(),
   site: SITE,
   status: 'pass',
+  discovery: null,
   jobs: [],
   notes: [],
 };
@@ -36,7 +34,7 @@ function fail(message) {
 
 async function inspectJob(browser, jobUrl) {
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersRuntimeCheck/1.0',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersRuntimeCheck/1.1',
   });
   const item = { url: jobUrl, checks: {}, network: {} };
   report.jobs.push(item);
@@ -187,8 +185,17 @@ async function inspectJob(browser, jobUrl) {
 
 const browser = await chromium.launch({ headless: true });
 try {
-  for (const jobUrl of JOBS) {
-    await inspectJob(browser, jobUrl);
+  const discovery = await discoverLiveJobs(browser, { site: SITE });
+  report.discovery = discovery;
+  discovery.notes.forEach(note => report.notes.push(note));
+  console.log(`Discovered ${discovery.urls.length} live job(s) via ${discovery.source}.`);
+
+  if (!discovery.urls.length) {
+    markInconclusive('Could not discover any live job URL from Blogger feed or homepage.');
+  } else {
+    for (const jobUrl of discovery.urls) {
+      await inspectJob(browser, jobUrl);
+    }
   }
 } finally {
   await browser.close();
