@@ -15,9 +15,18 @@ Danh sách job không còn hard-code trong từng audit script.
 1. ưu tiên đọc Blogger posts feed và lấy mọi `alternate` URL có dạng `/YYYY/MM/*.html` trên đúng domain tuyển dụng;
 2. nếu feed không dùng được hoặc bị 429, fallback sang các post URL tìm thấy trên homepage;
 3. loại query/hash, URL ngoài domain và static Page URL;
-4. nếu cả hai nguồn đều không đáng tin cậy, trả trạng thái discovery rỗng để workflow báo `INCONCLUSIVE` thay vì giả định danh sách job cũ.
+4. nếu feed có body post, phân loại lifecycle ngay từ discovery bằng `Hạn ứng tuyển`;
+5. nếu homepage fallback không có body post thì lifecycle ban đầu là `inconclusive`, sau đó được xác định lại từ rendered job page;
+6. nếu cả hai nguồn đều không đáng tin cậy, workflow báo `INCONCLUSIVE` thay vì giả định danh sách job cũ.
 
-Nhờ vậy khi publish job thứ 3, thứ 4... live audit tự phát hiện mà không cần sửa mảng URL trong code.
+Policy lifecycle:
+
+- không có `Hạn ứng tuyển` → `open`;
+- deadline hợp lệ và chưa qua 23:59:59 Asia/Ho_Chi_Minh → `open`;
+- deadline hợp lệ và đã qua → `expired`;
+- có chuỗi deadline nhưng ngày không hợp lệ → `inconclusive`.
+
+Không tự tạo deadline và không tự đóng job khi dữ liệu không đủ.
 
 ## Những gì được kiểm tra
 
@@ -34,15 +43,25 @@ Với từng job URL được discovery tự động:
 
 Các rule được thực thi bởi `scripts/check_job_authoring.py`, nên pre-publish QA và live QA dùng cùng một nguồn contract.
 
+Rendered runtime verification áp contract theo lifecycle:
+
+- `open`: phải có Apply CTA khả dụng và `fusumi-jobposting-jsonld` hợp lệ;
+- `expired`: phải hiển thị `Đã hết hạn tuyển`, Apply CTA phải bị vô hiệu hóa và không còn `fusumi-jobposting-jsonld`;
+- `inconclusive`: vẫn kiểm tra các contract chung như canonical/config/GA4 nhưng bỏ qua check lifecycle-dependent để tránh false-fail.
+
+Nếu feed và rendered page cho lifecycle khác nhau, report ghi mismatch và coi tình huống là `INCONCLUSIVE`; rendered page được dùng cho contract check của lần chạy đó.
+
 ## Trạng thái
 
-- `PASS`: rendered production data thỏa toàn bộ authoring contract.
+- `PASS`: rendered production data thỏa toàn bộ contract áp dụng cho lifecycle hiện tại.
 - `FAIL`: trang tải được bình thường nhưng có vi phạm contract; workflow fail để cần xử lý.
-- `INCONCLUSIVE`: Blogger trả 429, lỗi mạng, discovery không đủ dữ liệu hoặc DOM chưa đọc được đáng tin cậy. Trạng thái này không được coi là regression production.
+- `INCONCLUSIVE`: Blogger trả 429, lỗi mạng, discovery không đủ dữ liệu, deadline không hợp lệ hoặc DOM chưa đọc được đáng tin cậy. Trạng thái này không được coi là regression production.
 
 ## Workflow
 
-`Live Smoke Test` chạy audit này sau khi Chromium được cài đặt. Report được ghi vào `live-authoring-report.json` và upload cùng workflow artifact. Report có thêm `discovery.source`, `discovery.urls` và `discovery.notes` để biết danh sách job đến từ feed hay homepage.
+`Live Smoke Test` chạy audit sau khi Chromium được cài đặt. Report được ghi vào `live-authoring-report.json` và `live-runtime-report.json` rồi upload thành workflow artifacts.
+
+Report có `discovery.jobs` với `lifecycle`, `reason`, `validThrough`, cùng counts `open`, `expired` và `inconclusive`.
 
 Workflow chạy khi:
 

@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { discoverLiveJobs } from './live_jobs.mjs';
+import { classifyLifecycleFromText, discoverLiveJobs } from './live_jobs.mjs';
 
 const SITE = 'https://tuyendung.fusumi.vn';
 const REPORT = 'live-authoring-report.json';
@@ -14,18 +14,19 @@ function normalize(text) {
   return (text || '').replace(/\s+/g, ' ').trim();
 }
 
-async function auditJob(browser, url) {
+async function auditJob(browser, discoveredJob) {
+  const url = discoveredJob.url;
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.1',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.2',
   });
   try {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const status = response ? response.status() : 0;
     if (status === 429) {
-      return { url, status: 'INCONCLUSIVE', reason: 'Blogger returned HTTP 429' };
+      return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Blogger returned HTTP 429' };
     }
     if (status < 200 || status >= 400) {
-      return { url, status: 'FAIL', reason: `HTTP ${status}` };
+      return { url, status: 'FAIL', lifecycle: discoveredJob.lifecycle, reason: `HTTP ${status}` };
     }
 
     await page.waitForTimeout(1200);
@@ -44,12 +45,16 @@ async function auditJob(browser, url) {
         title: (h1?.textContent || '').trim(),
         labels,
         bodyHtml: body?.innerHTML || '',
+        bodyText: body?.textContent || '',
       };
     });
 
     if (!data.title || !data.bodyHtml) {
-      return { url, status: 'INCONCLUSIVE', reason: 'Expected job DOM was not available after render' };
+      return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Expected job DOM was not available after render' };
     }
+
+    const renderedLifecycle = classifyLifecycleFromText(data.bodyText);
+    const lifecycle = renderedLifecycle.lifecycle;
 
     const dir = mkdtempSync(join(tmpdir(), 'fusumi-live-authoring-'));
     const htmlFile = join(dir, 'job.html');
@@ -58,22 +63,23 @@ async function auditJob(browser, url) {
       const args = [QA_SCRIPT, '--title', data.title, '--labels', ...data.labels, '--html-file', htmlFile];
       const result = spawnSync('python', args, { encoding: 'utf8' });
       const output = normalize(`${result.stdout || ''}\n${result.stderr || ''}`);
-      if (result.status === 0) {
-        return { url, status: 'PASS', title: data.title, labels: data.labels };
-      }
-      return {
+      const base = {
         url,
-        status: 'FAIL',
+        lifecycle,
+        lifecycleReason: renderedLifecycle.reason,
+        validThrough: renderedLifecycle.validThrough,
+        discoveryLifecycle: discoveredJob.lifecycle,
         title: data.title,
         labels: data.labels,
-        reason: output || `authoring QA exited ${result.status}`,
       };
+      if (result.status === 0) return { ...base, status: 'PASS' };
+      return { ...base, status: 'FAIL', reason: output || `authoring QA exited ${result.status}` };
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   } catch (error) {
     const text = normalize(error?.message || String(error));
-    return { url, status: 'INCONCLUSIVE', reason: text };
+    return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: text };
   } finally {
     await page.close();
   }
@@ -84,16 +90,16 @@ let results = [];
 let discovery;
 try {
   discovery = await discoverLiveJobs(browser, { site: SITE });
-  console.log(`Discovered ${discovery.urls.length} live job(s) via ${discovery.source}.`);
+  console.log(`Discovered ${discovery.jobs.length} live job(s) via ${discovery.source}.`);
   discovery.notes.forEach(note => console.log(`WARN: ${note}`));
 
-  if (!discovery.urls.length) {
-    results.push({ url: SITE, status: 'INCONCLUSIVE', reason: 'Could not discover any live job URL from Blogger feed or homepage' });
+  if (!discovery.jobs.length) {
+    results.push({ url: SITE, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Could not discover any live job URL from Blogger feed or homepage' });
   } else {
-    for (const url of discovery.urls) {
-      const result = await auditJob(browser, url);
+    for (const job of discovery.jobs) {
+      const result = await auditJob(browser, job);
       results.push(result);
-      console.log(`${result.status}: ${url}${result.reason ? ` — ${result.reason}` : ''}`);
+      console.log(`${result.status}: ${job.url} [${result.lifecycle}]${result.reason ? ` — ${result.reason}` : ''}`);
       await new Promise(resolve => setTimeout(resolve, 2500));
     }
   }
@@ -104,12 +110,15 @@ try {
 const summary = {
   checkedAt: new Date().toISOString(),
   site: SITE,
-  discovery: discovery || { urls: [], source: 'none', notes: ['Discovery did not complete'] },
+  discovery: discovery || { jobs: [], urls: [], source: 'none', notes: ['Discovery did not complete'] },
   jobs: results,
   counts: {
     pass: results.filter(item => item.status === 'PASS').length,
     fail: results.filter(item => item.status === 'FAIL').length,
     inconclusive: results.filter(item => item.status === 'INCONCLUSIVE').length,
+    open: results.filter(item => item.lifecycle === 'open').length,
+    expired: results.filter(item => item.lifecycle === 'expired').length,
+    lifecycleInconclusive: results.filter(item => item.lifecycle === 'inconclusive').length,
   },
 };
 writeFileSync(REPORT, JSON.stringify(summary, null, 2) + '\n', 'utf8');
