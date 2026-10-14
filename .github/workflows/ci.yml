@@ -51,11 +51,13 @@ jobs:
           test -f scripts/check_live_authoring.mjs
           test -f scripts/check_live_runtime.mjs
           test -f scripts/live_jobs.mjs
+          test -f scripts/render_live_summary.mjs
           test -f scripts/check_runtime_contract.py
           test -f scripts/check_job_template.py
           test -f scripts/check_job_authoring.py
           test -f tests/test_job_authoring_qa.py
           test -f tests/test_live_jobs.mjs
+          test -f tests/test_live_summary.mjs
           test -f tests/runtime.spec.js
           test -f tests/analytics-runtime.spec.js
           test -f tests/apply-hardening.spec.js
@@ -76,7 +78,9 @@ jobs:
           node --check scripts/live_jobs.mjs
           node --check scripts/check_live_authoring.mjs
           node --check scripts/check_live_runtime.mjs
+          node --check scripts/render_live_summary.mjs
           node tests/test_live_jobs.mjs
+          node tests/test_live_summary.mjs
 
       - name: Install Playwright test runner
         run: npm install --no-save @playwright/test@1.55.0

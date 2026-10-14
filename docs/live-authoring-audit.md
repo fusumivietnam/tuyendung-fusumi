@@ -69,6 +69,30 @@ Workflow chạy khi:
 - chạy thủ công;
 - lịch hằng ngày lúc 08:00 giờ Việt Nam.
 
+## GitHub Actions live dashboard
+
+`scripts/render_live_summary.mjs` hợp nhất hai JSON report thành một bảng Markdown trong `GITHUB_STEP_SUMMARY`.
+
+Mỗi job có một dòng với:
+
+- Job + link production;
+- Location lấy từ label `ĐĐ:`;
+- Lifecycle;
+- Authoring QA;
+- Runtime;
+- JobPosting;
+- Apply;
+- SEO canonical/meta description.
+
+Quy ước hiển thị:
+
+- ✅ pass;
+- ❌ fail;
+- ⚠️ inconclusive;
+- — dữ liệu không có vì một report chưa được tạo.
+
+Dashboard chỉ trình bày lại kết quả audit, không thay đổi exit code và không tự sửa production. JSON artifacts vẫn được giữ làm nguồn debug chi tiết.
+
 ## Khi có FAIL
 
 Không sửa Blogger chỉ dựa trên một kết quả live nếu dữ liệu mâu thuẫn với editor hoặc vừa mới cập nhật. Trước tiên xác nhận lại Post trong Blogger editor; sau đó chỉ sửa field thực sự sai.
