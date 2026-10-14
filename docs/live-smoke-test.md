@@ -52,6 +52,17 @@ Persistent HTTP 429 remains `INCONCLUSIVE`, not a production regression. This ke
 
 A machine-readable `live-runtime-report.json` artifact is uploaded on every run.
 
+### Playwright browser cache
+
+CI and `Live Smoke Test` pin the same Playwright version and cache `~/.cache/ms-playwright` with a key derived from runner OS + Playwright version + Chromium.
+
+- system dependencies are still installed on every fresh runner;
+- Chromium browser binaries are downloaded only on cache miss;
+- changing the pinned Playwright version automatically rotates the cache key;
+- cache failure never changes runtime verification semantics: a miss simply installs Chromium normally.
+
+This avoids repeatedly downloading the large Chromium archive on routine runs while keeping browser/runtime behavior deterministic.
+
 If Blogger or the Blogger feed returns HTTP 429, the affected rendered check is reported as **inconclusive** where possible rather than being treated as a false production regression. Real contract failures still fail the workflow.
 
 Static source contracts remain covered by `scripts/check_runtime_contract.py` and the mocked Playwright suite on every PR, so production availability and source correctness are independent signals.
