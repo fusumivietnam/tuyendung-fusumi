@@ -20,7 +20,7 @@ export function parseDeadlineFromText(text) {
     .replace(/&nbsp;|&#160;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  const match = normalized.match(/Hạn ứng tuyển\s*:\s*(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/i);
+  const match = normalized.match(/Hạn ứng tuyển\s*:?\s*(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/i);
   if (!match) return null;
 
   const raw = match[1];
