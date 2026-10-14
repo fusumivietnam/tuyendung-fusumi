@@ -58,32 +58,6 @@ jobs:
           path: live-runtime-report.json
           if-no-files-found: ignore
 
-      - name: Summary
+      - name: Live status dashboard
         if: always()
-        run: |
-          echo '## Fusumi Careers live smoke test' >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Site: https://tuyendung.fusumi.vn/' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Triggers: main update, manual dispatch, and daily at 08:00 Asia/Ho_Chi_Minh.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Static checks: homepage, Page links, canonical URLs, job cards, runtime marker, one job detail, and Apply route.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Discovery: Blogger feed first, homepage fallback; all discovered job URLs are audited automatically.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Lifecycle: no deadline=open; future deadline=open; past deadline=expired; invalid deadline=inconclusive.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Authoring checks: live title, PB:/ĐĐ:/HT: labels, metadata, placeholders, quantity, deadline, embedded code, and body-level Apply CTA.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Open-job runtime: Apply CTA + JobPosting JSON-LD are required.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Expired-job runtime: expired status is required; Apply must be disabled and JobPosting JSON-LD absent.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Common rendered checks: Careers/Analytics/Config markers, canonical, job-specific meta description, and GA4 loader.' >> "$GITHUB_STEP_SUMMARY"
-          echo '- HTTP 429, discovery ambiguity, invalid deadline, or feed/rendered lifecycle mismatch is reported as inconclusive where possible instead of a false production regression.' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f live-authoring-report.json ]; then
-            echo '' >> "$GITHUB_STEP_SUMMARY"
-            echo '### Live authoring audit' >> "$GITHUB_STEP_SUMMARY"
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat live-authoring-report.json >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -f live-runtime-report.json ]; then
-            echo '' >> "$GITHUB_STEP_SUMMARY"
-            echo '### Live runtime verification' >> "$GITHUB_STEP_SUMMARY"
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat live-runtime-report.json >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: node scripts/render_live_summary.mjs >> "$GITHUB_STEP_SUMMARY"
