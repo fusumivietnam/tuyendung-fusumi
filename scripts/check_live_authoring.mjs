@@ -4,11 +4,9 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { discoverLiveJobs } from './live_jobs.mjs';
 
-const JOBS = [
-  'https://tuyendung.fusumi.vn/2026/10/ke-toan-noi-bo.html',
-  'https://tuyendung.fusumi.vn/2026/10/nvkd-thi-truong-khu-vuc-mien-tru.html',
-];
+const SITE = 'https://tuyendung.fusumi.vn';
 const REPORT = 'live-authoring-report.json';
 const QA_SCRIPT = 'scripts/check_job_authoring.py';
 
@@ -18,7 +16,7 @@ function normalize(text) {
 
 async function auditJob(browser, url) {
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.0',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.1',
   });
   try {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -75,9 +73,6 @@ async function auditJob(browser, url) {
     }
   } catch (error) {
     const text = normalize(error?.message || String(error));
-    if (/429|ERR_TOO_MANY_REQUESTS/i.test(text)) {
-      return { url, status: 'INCONCLUSIVE', reason: text };
-    }
     return { url, status: 'INCONCLUSIVE', reason: text };
   } finally {
     await page.close();
@@ -85,14 +80,22 @@ async function auditJob(browser, url) {
 }
 
 const browser = await chromium.launch({ headless: true });
-let results;
+let results = [];
+let discovery;
 try {
-  results = [];
-  for (const url of JOBS) {
-    const result = await auditJob(browser, url);
-    results.push(result);
-    console.log(`${result.status}: ${url}${result.reason ? ` — ${result.reason}` : ''}`);
-    await new Promise(resolve => setTimeout(resolve, 2500));
+  discovery = await discoverLiveJobs(browser, { site: SITE });
+  console.log(`Discovered ${discovery.urls.length} live job(s) via ${discovery.source}.`);
+  discovery.notes.forEach(note => console.log(`WARN: ${note}`));
+
+  if (!discovery.urls.length) {
+    results.push({ url: SITE, status: 'INCONCLUSIVE', reason: 'Could not discover any live job URL from Blogger feed or homepage' });
+  } else {
+    for (const url of discovery.urls) {
+      const result = await auditJob(browser, url);
+      results.push(result);
+      console.log(`${result.status}: ${url}${result.reason ? ` — ${result.reason}` : ''}`);
+      await new Promise(resolve => setTimeout(resolve, 2500));
+    }
   }
 } finally {
   await browser.close();
@@ -100,6 +103,8 @@ try {
 
 const summary = {
   checkedAt: new Date().toISOString(),
+  site: SITE,
+  discovery: discovery || { urls: [], source: 'none', notes: ['Discovery did not complete'] },
   jobs: results,
   counts: {
     pass: results.filter(item => item.status === 'PASS').length,
@@ -109,6 +114,4 @@ const summary = {
 };
 writeFileSync(REPORT, JSON.stringify(summary, null, 2) + '\n', 'utf8');
 
-if (summary.counts.fail > 0) {
-  process.exitCode = 1;
-}
+if (summary.counts.fail > 0) process.exitCode = 1;
