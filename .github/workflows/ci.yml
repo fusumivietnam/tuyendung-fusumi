@@ -23,6 +23,9 @@ jobs:
       - name: Validate Blogger runtime contracts
         run: python scripts/check_runtime_contract.py
 
+      - name: Validate job template contract
+        run: python scripts/check_job_template.py
+
       - name: Validate repository files
         shell: bash
         run: |
@@ -40,6 +43,7 @@ jobs:
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
           test -f scripts/check_runtime_contract.py
+          test -f scripts/check_job_template.py
           test -f tests/runtime.spec.js
           test -f tests/analytics-runtime.spec.js
           test -f tests/apply-hardening.spec.js
@@ -48,7 +52,7 @@ jobs:
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
-        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
