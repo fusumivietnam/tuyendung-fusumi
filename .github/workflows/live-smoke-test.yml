@@ -16,6 +16,8 @@ jobs:
   smoke-test:
     name: live-smoke-test
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_VERSION: '1.55.0'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,10 +34,21 @@ jobs:
           node-version: '22'
 
       - name: Install Playwright test runner
-        run: npm install --no-save @playwright/test@1.55.0
+        run: npm install --no-save @playwright/test@${PLAYWRIGHT_VERSION}
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}-chromium
+
+      - name: Install Chromium system dependencies
+        run: npx playwright install-deps chromium
+
+      - name: Install Chromium browser on cache miss
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
 
       - name: Audit live job authoring contract
         run: node scripts/check_live_authoring.mjs
