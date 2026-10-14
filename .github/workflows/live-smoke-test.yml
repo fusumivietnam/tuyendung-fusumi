@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   smoke-test:
@@ -40,6 +41,7 @@ jobs:
         run: node scripts/check_live_authoring.mjs
 
       - name: Verify rendered production runtime
+        if: always()
         run: node scripts/check_live_runtime.mjs
 
       - name: Upload live authoring report
@@ -61,3 +63,9 @@ jobs:
       - name: Live status dashboard
         if: always()
         run: node scripts/render_live_summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Sync production regression issue
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/sync_live_failure_issue.mjs

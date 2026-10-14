@@ -73,16 +73,7 @@ Workflow chạy khi:
 
 `scripts/render_live_summary.mjs` hợp nhất hai JSON report thành một bảng Markdown trong `GITHUB_STEP_SUMMARY`.
 
-Mỗi job có một dòng với:
-
-- Job + link production;
-- Location lấy từ label `ĐĐ:`;
-- Lifecycle;
-- Authoring QA;
-- Runtime;
-- JobPosting;
-- Apply;
-- SEO canonical/meta description.
+Mỗi job có một dòng với Job + link production, Location, Lifecycle, Authoring QA, Runtime, JobPosting, Apply và SEO canonical/meta description.
 
 Quy ước hiển thị:
 
@@ -92,6 +83,19 @@ Quy ước hiển thị:
 - — dữ liệu không có vì một report chưa được tạo.
 
 Dashboard chỉ trình bày lại kết quả audit, không thay đổi exit code và không tự sửa production. JSON artifacts vẫn được giữ làm nguồn debug chi tiết.
+
+## Production regression issue
+
+`scripts/sync_live_failure_issue.mjs` đồng bộ một issue duy nhất có tiêu đề `[Production] Fusumi Careers live audit failure`.
+
+Policy:
+
+- có ít nhất một `FAIL` trong authoring hoặc runtime report → tạo issue nếu chưa có, hoặc thêm comment vào issue hiện có;
+- issue đã đóng mà regression quay lại → mở lại cùng issue và thêm lần kiểm tra mới;
+- `HTTP 429`, thiếu report, lỗi mạng hoặc `INCONCLUSIVE` → không tạo issue, không cập nhật issue và không tự đóng issue cũ;
+- chỉ tự đóng issue khi cả hai report đều tồn tại và mọi job được discovery đều `PASS` ở cả Authoring QA và Runtime.
+
+Workflow cấp `issues: write` chỉ cho `Live Smoke Test`; CI/PR validation vẫn giữ quyền read-only.
 
 ## Khi có FAIL
 
