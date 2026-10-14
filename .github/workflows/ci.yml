@@ -26,8 +26,8 @@ jobs:
       - name: Validate job template contract
         run: python scripts/check_job_template.py
 
-      - name: Test job authoring QA
-        run: python -m unittest tests/test_job_authoring_qa.py
+      - name: Test Python QA and live probe
+        run: python -m unittest tests/test_job_authoring_qa.py tests/test_live_site_probe.py
 
       - name: Validate repository files
         shell: bash
@@ -57,6 +57,7 @@ jobs:
           test -f scripts/check_job_template.py
           test -f scripts/check_job_authoring.py
           test -f tests/test_job_authoring_qa.py
+          test -f tests/test_live_site_probe.py
           test -f tests/test_live_jobs.mjs
           test -f tests/test_live_summary.mjs
           test -f tests/test_live_failure_issue.mjs
@@ -68,7 +69,7 @@ jobs:
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
-        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py tests/test_job_authoring_qa.py
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py tests/test_job_authoring_qa.py tests/test_live_site_probe.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
