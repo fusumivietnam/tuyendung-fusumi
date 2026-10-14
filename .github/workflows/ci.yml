@@ -32,6 +32,7 @@ jobs:
           test -f README.md
           test -f docs/cai-dat-blogger.md
           test -f templates/mau-tin-tuyen-dung.md
+          test -f templates/mau-tin-tuyen-dung-blogger.html
           test -f templates/footer-contact.html
           test -f templates/fusumi-careers-config.html
           test -f templates/fusumi-careers-runtime.html
