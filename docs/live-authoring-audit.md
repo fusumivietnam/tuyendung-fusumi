@@ -13,11 +13,12 @@ Danh sách job không còn hard-code trong từng audit script.
 `scripts/live_jobs.mjs` là nguồn discovery dùng chung cho cả live authoring audit và rendered runtime verification:
 
 1. ưu tiên đọc Blogger posts feed và lấy mọi `alternate` URL có dạng `/YYYY/MM/*.html` trên đúng domain tuyển dụng;
-2. nếu feed không dùng được hoặc bị 429, fallback sang các post URL tìm thấy trên homepage;
-3. loại query/hash, URL ngoài domain và static Page URL;
-4. nếu feed có body post, phân loại lifecycle ngay từ discovery bằng `Hạn ứng tuyển`;
-5. nếu homepage fallback không có body post thì lifecycle ban đầu là `inconclusive`, sau đó được xác định lại từ rendered job page;
-6. nếu cả hai nguồn đều không đáng tin cậy, workflow báo `INCONCLUSIVE` thay vì giả định danh sách job cũ.
+2. feed job payload giữ lại `title`, labels và body HTML để Authoring QA có thể kiểm tra trực tiếp mà không cần mở từng trang job;
+3. nếu feed không dùng được hoặc bị 429, fallback sang các post URL tìm thấy trên homepage;
+4. loại query/hash, URL ngoài domain và static Page URL;
+5. nếu feed có body post, phân loại lifecycle ngay từ discovery bằng `Hạn ứng tuyển`;
+6. nếu homepage fallback không có body post thì lifecycle ban đầu là `inconclusive`, sau đó được xác định lại từ rendered job page;
+7. nếu cả hai nguồn đều không đáng tin cậy, workflow báo `INCONCLUSIVE` thay vì giả định danh sách job cũ.
 
 Policy lifecycle:
 
@@ -27,6 +28,22 @@ Policy lifecycle:
 - có chuỗi deadline nhưng ngày không hợp lệ → `inconclusive`.
 
 Không tự tạo deadline và không tự đóng job khi dữ liệu không đủ.
+
+## Authoring QA: feed-first
+
+Khi Blogger feed có đủ `title`, labels và body HTML, `scripts/check_live_authoring.mjs` chạy `scripts/check_job_authoring.py` trực tiếp trên dữ liệu feed.
+
+Điều này tránh thêm một HTTP request/Chromium navigation cho từng job và giảm đáng kể khả năng gặp Blogger HTTP 429.
+
+Chỉ khi discovery phải fallback sang homepage hoặc feed thiếu dữ liệu authoring, audit mới mở rendered job page để lấy title/labels/body.
+
+Report ghi `source` cho từng job:
+
+- `blogger-feed`: authoring QA được kiểm tra trực tiếp từ feed;
+- `rendered-page`: phải fallback sang rendered page;
+- `none`: discovery không đủ tin cậy.
+
+`counts.feed` và `counts.renderedFallback` giúp theo dõi audit đang dùng đường nào.
 
 ## Những gì được kiểm tra
 
@@ -43,6 +60,8 @@ Với từng job URL được discovery tự động:
 
 Các rule được thực thi bởi `scripts/check_job_authoring.py`, nên pre-publish QA và live QA dùng cùng một nguồn contract.
 
+Rendered runtime verification vẫn luôn kiểm tra browser-rendered production vì canonical, runtime marker, GA4, Apply CTA và JobPosting JSON-LD phụ thuộc JavaScript thực tế.
+
 Rendered runtime verification áp contract theo lifecycle:
 
 - `open`: phải có Apply CTA khả dụng và `fusumi-jobposting-jsonld` hợp lệ;
@@ -53,8 +72,8 @@ Nếu feed và rendered page cho lifecycle khác nhau, report ghi mismatch và c
 
 ## Trạng thái
 
-- `PASS`: rendered production data thỏa toàn bộ contract áp dụng cho lifecycle hiện tại.
-- `FAIL`: trang tải được bình thường nhưng có vi phạm contract; workflow fail để cần xử lý.
+- `PASS`: production data thỏa toàn bộ contract áp dụng cho nguồn kiểm tra hiện tại.
+- `FAIL`: dữ liệu production đọc được bình thường nhưng có vi phạm contract; workflow fail để cần xử lý.
 - `INCONCLUSIVE`: Blogger trả 429, lỗi mạng, discovery không đủ dữ liệu, deadline không hợp lệ hoặc DOM chưa đọc được đáng tin cậy. Trạng thái này không được coi là regression production.
 
 ## Workflow
