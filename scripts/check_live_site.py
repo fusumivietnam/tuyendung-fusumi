@@ -12,7 +12,10 @@ from urllib.parse import urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 DEFAULT_SITE = "https://tuyendung.fusumi.vn/"
-USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.3"
+USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiCareersSmokeTest/2.4"
+DEFAULT_RETRIES = 3
+DEFAULT_TIMEOUT = 12.0
+MAX_RETRY_AFTER = 10.0
 
 
 class RateLimited(RuntimeError):
@@ -45,8 +48,25 @@ def fail(message: str) -> None:
     raise SystemExit(f"ERROR: {message}")
 
 
-def fetch(url: str, retries: int = 5) -> str:
-    """Fetch one public page with conservative Blogger 429 backoff."""
+def retry_wait(attempt: int, retry_after: str | None = None, *, rate_limited: bool = False) -> float:
+    """Return a bounded wait so live smoke checks do not stall on persistent 429s."""
+    if retry_after:
+        try:
+            return max(0.0, min(float(retry_after), MAX_RETRY_AFTER))
+        except ValueError:
+            pass
+    if rate_limited:
+        return min(float(2**attempt), 6.0)
+    return min(float(attempt * 2), 6.0)
+
+
+def fetch(url: str, retries: int = DEFAULT_RETRIES, timeout: float = DEFAULT_TIMEOUT) -> str:
+    """Fetch one public page with short, bounded Blogger backoff.
+
+    Persistent HTTP 429 is availability noise for GitHub-hosted runners, so the
+    static probe gives Blogger a couple of quick retries and then returns an
+    INCONCLUSIVE signal. Rendered runtime checks provide the deeper live signal.
+    """
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
@@ -59,7 +79,7 @@ def fetch(url: str, retries: int = 5) -> str:
                     "Cache-Control": "no-cache",
                 },
             )
-            with urlopen(request, timeout=25) as response:
+            with urlopen(request, timeout=timeout) as response:
                 status = getattr(response, "status", 200)
                 if status != 200:
                     fail(f"{url} returned HTTP {status}")
@@ -72,20 +92,17 @@ def fetch(url: str, retries: int = 5) -> str:
             if exc.code == 429:
                 if attempt < retries:
                     retry_after = exc.headers.get("Retry-After") if exc.headers else None
-                    try:
-                        wait = int(retry_after) if retry_after else min(5 * (2 ** (attempt - 1)), 30)
-                    except ValueError:
-                        wait = min(5 * (2 ** (attempt - 1)), 30)
-                    print(f"WARN Blogger rate-limited {url}; retrying in {wait}s (attempt {attempt}/{retries})")
+                    wait = retry_wait(attempt, retry_after, rate_limited=True)
+                    print(f"WARN Blogger rate-limited {url}; retrying in {wait:g}s (attempt {attempt}/{retries})")
                     time.sleep(wait)
                     continue
                 raise RateLimited(f"Blogger returned HTTP 429 for {url} after {retries} attempts") from exc
             if attempt < retries:
-                time.sleep(min(attempt * 3, 10))
+                time.sleep(retry_wait(attempt))
         except (URLError, TimeoutError) as exc:
             last_error = exc
             if attempt < retries:
-                time.sleep(min(attempt * 3, 10))
+                time.sleep(retry_wait(attempt))
     fail(f"Cannot fetch {url}: {last_error}")
 
 
@@ -154,12 +171,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site", default=DEFAULT_SITE)
     parser.add_argument("--min-jobs", type=int, default=1)
-    parser.add_argument("--pace", type=float, default=4.0, help="seconds between successful public requests")
+    parser.add_argument("--pace", type=float, default=1.5, help="seconds between successful public requests")
+    parser.add_argument("--retries", type=int, default=DEFAULT_RETRIES, help="attempts per public URL before giving up")
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT, help="per-request timeout in seconds")
     args = parser.parse_args()
 
     base = args.site.rstrip("/") + "/"
 
-    homepage = fetch(base)
+    homepage = fetch(base, retries=args.retries, timeout=args.timeout)
     if len(homepage.strip()) < 500:
         fail(f"homepage looks unexpectedly empty ({len(homepage)} bytes)")
     print(f"OK homepage: {base} ({len(homepage)} bytes)")
@@ -182,7 +201,7 @@ def main() -> None:
 
     time.sleep(args.pace)
 
-    post_html = fetch(post_url)
+    post_html = fetch(post_url, retries=args.retries, timeout=args.timeout)
     assert_contains("job post", post_html, ["Ứng tuyển vị trí này", "JobPosting"])
     if "fusumi-careers-runtime" not in post_html:
         fail("job post is missing Fusumi Careers Runtime gadget marker")
@@ -194,7 +213,7 @@ def main() -> None:
     apply_base = urljoin(base, "p/ung-tuyen.html")
     apply_query = urlencode({"vi-tri": "Smoke Test", "job": post_url})
     apply_url = apply_base + "?" + apply_query
-    apply_html = fetch(apply_url)
+    apply_html = fetch(apply_url, retries=args.retries, timeout=args.timeout)
     assert_contains("apply flow", apply_html, ["Gửi CV qua email", "data-apply-position", "data-apply-email"])
     assert_canonical("apply page", apply_base, apply_html)
     print(f"OK apply flow route: {apply_url}")
