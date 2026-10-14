@@ -15,7 +15,11 @@ export function normalizeJobUrl(raw, site = DEFAULT_SITE) {
 }
 
 export function parseDeadlineFromText(text) {
-  const normalized = String(text || '').replace(/\s+/g, ' ').trim();
+  const normalized = String(text || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const match = normalized.match(/Hạn ứng tuyển\s*:\s*(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4})/i);
   if (!match) return null;
 
