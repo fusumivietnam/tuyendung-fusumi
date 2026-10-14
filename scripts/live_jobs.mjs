@@ -73,6 +73,16 @@ function feedEntryBody(entry) {
   return entry?.content?.$t || entry?.summary?.$t || '';
 }
 
+function feedEntryTitle(entry) {
+  return String(entry?.title?.$t || '').trim();
+}
+
+function feedEntryLabels(entry) {
+  return (Array.isArray(entry?.category) ? entry.category : [])
+    .map(category => String(category?.term || '').trim())
+    .filter(Boolean);
+}
+
 export function extractJobsFromFeed(feed, site = DEFAULT_SITE, now = new Date()) {
   const entries = feed?.feed?.entry || [];
   const jobs = [];
@@ -81,8 +91,16 @@ export function extractJobsFromFeed(feed, site = DEFAULT_SITE, now = new Date())
     const alternate = links.find(link => link?.rel === 'alternate' && link?.href);
     const url = normalizeJobUrl(alternate?.href || '', site);
     if (!url) continue;
-    const lifecycle = classifyLifecycleFromText(feedEntryBody(entry), now);
-    jobs.push({ url, ...lifecycle, lifecycleSource: 'blogger-feed' });
+    const bodyHtml = feedEntryBody(entry);
+    const lifecycle = classifyLifecycleFromText(bodyHtml, now);
+    jobs.push({
+      url,
+      ...lifecycle,
+      lifecycleSource: 'blogger-feed',
+      title: feedEntryTitle(entry),
+      labels: feedEntryLabels(entry),
+      bodyHtml,
+    });
   }
   return [...new Map(jobs.map(job => [job.url, job])).values()];
 }
@@ -97,7 +115,7 @@ export function extractJobUrlsFromLinks(links, site = DEFAULT_SITE) {
 
 async function discoverFromFeed(browser, site) {
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiJobDiscovery/1.1',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiJobDiscovery/1.2',
   });
   const feedUrl = `${site.replace(/\/$/, '')}/feeds/posts/default?alt=json&max-results=150`;
   try {
@@ -117,7 +135,7 @@ async function discoverFromFeed(browser, site) {
 
 async function discoverFromHomepage(browser, site) {
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiJobDiscovery/1.1',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiJobDiscovery/1.2',
   });
   try {
     const response = await page.goto(site, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -131,6 +149,9 @@ async function discoverFromHomepage(browser, site) {
       reason: 'homepage-discovery-has-no-post-body',
       validThrough: '',
       lifecycleSource: 'homepage',
+      title: '',
+      labels: [],
+      bodyHtml: '',
     }));
     return { jobs, note: '' };
   } catch (error) {
