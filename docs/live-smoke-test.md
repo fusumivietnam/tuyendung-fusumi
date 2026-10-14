@@ -20,11 +20,21 @@ Blogger can rate-limit GitHub-hosted runners (HTTP 429), so the live test keeps 
 2. discovers one published job from homepage and fetches it after a short pacing delay;
 3. validates job canonical, apply CTA, JobPosting marker, and runtime marker;
 4. fetches the Apply Page with the same `vi-tri` + `job` query shape emitted by the runtime;
-5. uses explicit 429 backoff before considering the deployment unavailable.
+5. uses a short, bounded 429 retry policy before considering the static probe unavailable.
+
+The static probe is intentionally fast-fail for Blogger rate limiting:
+
+- 3 attempts per URL by default;
+- 12 second request timeout;
+- 429 backoff of 2s then 4s;
+- `Retry-After` is honored but capped at 10s;
+- pacing between successful public requests defaults to 1.5s.
+
+Persistent HTTP 429 remains `INCONCLUSIVE`, not a production regression. This keeps the static probe useful without making every workflow wait close to a minute when Blogger blocks GitHub-hosted runner IPs.
 
 ### Rendered browser probe
 
-`scripts/check_live_runtime.mjs` launches Chromium against both current published jobs and validates the DOM after JavaScript execution:
+`scripts/check_live_runtime.mjs` launches Chromium against the automatically discovered published jobs and validates the DOM after JavaScript execution:
 
 - exactly one Careers Runtime marker;
 - exactly one Analytics Runtime marker;
@@ -34,7 +44,8 @@ Blogger can rate-limit GitHub-hosted runners (HTTP 429), so the live test keeps 
 - Layout Config values use valid email / entry ID / GA4 formats;
 - GA4 loader uses the Measurement ID from Layout Config;
 - Apply CTA carries the configured Apply Page path, `vi-tri`, and clean `job` URL;
-- `#fusumi-jobposting-jsonld` is emitted and contains `JobPosting`, title, description, datePosted, hiringOrganization and clean URL;
+- lifecycle-specific Apply and JobPosting behavior is correct;
+- `#fusumi-jobposting-jsonld` contains the required JobPosting fields for open jobs;
 - `directApply` remains `false` for the external Google Form flow;
 - `baseSalary` is not fabricated;
 - `validThrough`, when present, parses as a real date.
