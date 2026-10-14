@@ -120,9 +120,8 @@ def inspect(title: str, labels: list[str], html: str) -> list[str]:
         return issues
 
     metadata = parse_metadata(parser)
-    visible_text = normalize(" ".join(parser.text_parts))
 
-    if re.search(r"\bNHẬP\b", visible_text, re.IGNORECASE):
+    if any(re.match(r"^NHẬP\b", normalize(part), re.IGNORECASE) for part in parser.text_parts if normalize(part)):
         issues.append("Body vẫn còn placeholder bắt đầu bằng 'NHẬP'.")
 
     if parser.forbidden_tags:
