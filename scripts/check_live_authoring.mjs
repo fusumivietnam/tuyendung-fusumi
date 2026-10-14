@@ -14,19 +14,63 @@ function normalize(text) {
   return (text || '').replace(/\s+/g, ' ').trim();
 }
 
-async function auditJob(browser, discoveredJob) {
+function runQa({ url, title, labels, bodyHtml, lifecycle, lifecycleReason, validThrough, discoveryLifecycle, source }) {
+  const dir = mkdtempSync(join(tmpdir(), 'fusumi-live-authoring-'));
+  const htmlFile = join(dir, 'job.html');
+  writeFileSync(htmlFile, bodyHtml, 'utf8');
+  try {
+    const args = [QA_SCRIPT, '--title', title, '--labels', ...labels, '--html-file', htmlFile];
+    const result = spawnSync('python', args, { encoding: 'utf8' });
+    const output = normalize(`${result.stdout || ''}\n${result.stderr || ''}`);
+    const base = {
+      url,
+      source,
+      lifecycle,
+      lifecycleReason,
+      validThrough,
+      discoveryLifecycle,
+      title,
+      labels,
+    };
+    if (result.status === 0) return { ...base, status: 'PASS' };
+    return { ...base, status: 'FAIL', reason: output || `authoring QA exited ${result.status}` };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function canAuditFromFeed(job) {
+  return job?.lifecycleSource === 'blogger-feed' && Boolean(job.title && job.bodyHtml && job.labels?.length);
+}
+
+function auditFeedJob(job) {
+  const lifecycle = classifyLifecycleFromText(job.bodyHtml);
+  return runQa({
+    url: job.url,
+    title: job.title,
+    labels: job.labels,
+    bodyHtml: job.bodyHtml,
+    lifecycle: lifecycle.lifecycle,
+    lifecycleReason: lifecycle.reason,
+    validThrough: lifecycle.validThrough,
+    discoveryLifecycle: job.lifecycle,
+    source: 'blogger-feed',
+  });
+}
+
+async function auditRenderedJob(browser, discoveredJob) {
   const url = discoveredJob.url;
   const page = await browser.newPage({
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.2',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/140 Safari/537.36 FusumiLiveAuthoringAudit/1.3',
   });
   try {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const status = response ? response.status() : 0;
     if (status === 429) {
-      return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Blogger returned HTTP 429' };
+      return { url, source: 'rendered-page', status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Blogger returned HTTP 429' };
     }
     if (status < 200 || status >= 400) {
-      return { url, status: 'FAIL', lifecycle: discoveredJob.lifecycle, reason: `HTTP ${status}` };
+      return { url, source: 'rendered-page', status: 'FAIL', lifecycle: discoveredJob.lifecycle, reason: `HTTP ${status}` };
     }
 
     await page.waitForTimeout(1200);
@@ -50,36 +94,24 @@ async function auditJob(browser, discoveredJob) {
     });
 
     if (!data.title || !data.bodyHtml) {
-      return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Expected job DOM was not available after render' };
+      return { url, source: 'rendered-page', status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Expected job DOM was not available after render' };
     }
 
     const renderedLifecycle = classifyLifecycleFromText(data.bodyText);
-    const lifecycle = renderedLifecycle.lifecycle;
-
-    const dir = mkdtempSync(join(tmpdir(), 'fusumi-live-authoring-'));
-    const htmlFile = join(dir, 'job.html');
-    writeFileSync(htmlFile, data.bodyHtml, 'utf8');
-    try {
-      const args = [QA_SCRIPT, '--title', data.title, '--labels', ...data.labels, '--html-file', htmlFile];
-      const result = spawnSync('python', args, { encoding: 'utf8' });
-      const output = normalize(`${result.stdout || ''}\n${result.stderr || ''}`);
-      const base = {
-        url,
-        lifecycle,
-        lifecycleReason: renderedLifecycle.reason,
-        validThrough: renderedLifecycle.validThrough,
-        discoveryLifecycle: discoveredJob.lifecycle,
-        title: data.title,
-        labels: data.labels,
-      };
-      if (result.status === 0) return { ...base, status: 'PASS' };
-      return { ...base, status: 'FAIL', reason: output || `authoring QA exited ${result.status}` };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
+    return runQa({
+      url,
+      title: data.title,
+      labels: data.labels,
+      bodyHtml: data.bodyHtml,
+      lifecycle: renderedLifecycle.lifecycle,
+      lifecycleReason: renderedLifecycle.reason,
+      validThrough: renderedLifecycle.validThrough,
+      discoveryLifecycle: discoveredJob.lifecycle,
+      source: 'rendered-page',
+    });
   } catch (error) {
     const text = normalize(error?.message || String(error));
-    return { url, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: text };
+    return { url, source: 'rendered-page', status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: text };
   } finally {
     await page.close();
   }
@@ -94,13 +126,13 @@ try {
   discovery.notes.forEach(note => console.log(`WARN: ${note}`));
 
   if (!discovery.jobs.length) {
-    results.push({ url: SITE, status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Could not discover any live job URL from Blogger feed or homepage' });
+    results.push({ url: SITE, source: 'none', status: 'INCONCLUSIVE', lifecycle: 'inconclusive', reason: 'Could not discover any live job URL from Blogger feed or homepage' });
   } else {
     for (const job of discovery.jobs) {
-      const result = await auditJob(browser, job);
+      const result = canAuditFromFeed(job) ? auditFeedJob(job) : await auditRenderedJob(browser, job);
       results.push(result);
-      console.log(`${result.status}: ${job.url} [${result.lifecycle}]${result.reason ? ` — ${result.reason}` : ''}`);
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      console.log(`${result.status}: ${job.url} [${result.lifecycle}] via ${result.source}${result.reason ? ` — ${result.reason}` : ''}`);
+      if (result.source === 'rendered-page') await new Promise(resolve => setTimeout(resolve, 2500));
     }
   }
 } finally {
@@ -119,6 +151,8 @@ const summary = {
     open: results.filter(item => item.lifecycle === 'open').length,
     expired: results.filter(item => item.lifecycle === 'expired').length,
     lifecycleInconclusive: results.filter(item => item.lifecycle === 'inconclusive').length,
+    feed: results.filter(item => item.source === 'blogger-feed').length,
+    renderedFallback: results.filter(item => item.source === 'rendered-page').length,
   },
 };
 writeFileSync(REPORT, JSON.stringify(summary, null, 2) + '\n', 'utf8');
