@@ -29,7 +29,7 @@ jobs:
         run: python scripts/check_job_template.py
 
       - name: Test Python QA and live probe
-        run: python -m unittest tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py
+        run: python -m unittest tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py
 
       - name: Validate repository files
         shell: bash
@@ -38,6 +38,7 @@ jobs:
           test -f docs/cai-dat-blogger.md
           test -f docs/job-authoring-qa.md
           test -f docs/live-authoring-audit.md
+          test -f docs/production-job-remediation-62.md
           test -f templates/mau-tin-tuyen-dung.md
           test -f templates/mau-tin-tuyen-dung-blogger.html
           test -f templates/footer-contact.html
@@ -47,6 +48,8 @@ jobs:
           test -f templates/pages/ve-fusumi.html
           test -f templates/pages/quy-trinh-tuyen-dung.html
           test -f templates/pages/ung-tuyen.html
+          test -f production-fixes/issue-62/ke-toan-noi-bo.html
+          test -f production-fixes/issue-62/nvkd-mien-trung.html
           test -f blogger/fusumi-careers-custom.css
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
@@ -61,6 +64,7 @@ jobs:
           test -f tests/test_job_authoring_qa.py
           test -f tests/test_live_site_probe.py
           test -f tests/test_playwright_cache_contract.py
+          test -f tests/test_production_job_fixes.py
           test -f tests/test_live_jobs.mjs
           test -f tests/test_live_summary.mjs
           test -f tests/test_live_failure_issue.mjs
@@ -72,7 +76,7 @@ jobs:
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
-        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
