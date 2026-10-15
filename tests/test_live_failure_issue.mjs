@@ -4,29 +4,13 @@ import { buildFailureMarkdown, evaluateRegression, ISSUE_TITLE } from '../script
 
 assert.equal(ISSUE_TITLE, '[Production] Fusumi Careers live audit failure');
 
-const passAuthoring = {
-  jobs: [
-    { url: 'https://tuyendung.fusumi.vn/2026/10/job-a.html', title: 'Job A', status: 'PASS' },
-  ],
-};
 const passRuntime = {
   status: 'pass',
   jobs: [
     { url: 'https://tuyendung.fusumi.vn/2026/10/job-a.html', status: 'pass', checks: { title: 'Job A' }, failures: [] },
   ],
 };
-assert.equal(evaluateRegression(passAuthoring, passRuntime).action, 'close-if-open');
-
-const authoringFail = {
-  jobs: [
-    { url: 'https://tuyendung.fusumi.vn/2026/10/job-a.html', title: 'Job A', status: 'FAIL', reason: 'missing Địa điểm' },
-  ],
-};
-let decision = evaluateRegression(authoringFail, passRuntime);
-assert.equal(decision.action, 'open-or-update');
-assert.equal(decision.failures.length, 1);
-assert.match(buildFailureMarkdown(decision, { runUrl: 'https://github.com/x/y/actions/runs/1' }), /missing Địa điểm/);
-assert.match(buildFailureMarkdown(decision), /INCONCLUSIVE states do not create or update/);
+assert.equal(evaluateRegression(passRuntime).action, 'close-if-open');
 
 const runtimeFail = {
   status: 'fail',
@@ -39,15 +23,13 @@ const runtimeFail = {
     },
   ],
 };
-decision = evaluateRegression(passAuthoring, runtimeFail);
+let decision = evaluateRegression(runtimeFail);
 assert.equal(decision.action, 'open-or-update');
 assert.equal(decision.failures.length, 2);
+assert.match(buildFailureMarkdown(decision, { runUrl: 'https://github.com/x/y/actions/runs/1' }), /JobPosting missing/);
+assert.match(buildFailureMarkdown(decision), /INCONCLUSIVE states do not create or update/);
+assert.doesNotMatch(buildFailureMarkdown(decision), /Authoring QA/);
 
-const inconclusiveAuthoring = {
-  jobs: [
-    { url: 'https://tuyendung.fusumi.vn/2026/10/job-a.html', title: 'Job A', status: 'INCONCLUSIVE', reason: 'HTTP 429' },
-  ],
-};
 const inconclusiveRuntime = {
   status: 'inconclusive',
   jobs: [
@@ -55,12 +37,11 @@ const inconclusiveRuntime = {
   ],
   notes: ['Blogger returned HTTP 429'],
 };
-decision = evaluateRegression(inconclusiveAuthoring, inconclusiveRuntime);
+decision = evaluateRegression(inconclusiveRuntime);
 assert.equal(decision.action, 'no-op');
 assert.equal(decision.failures.length, 0);
 assert.ok(decision.inconclusive.length >= 1);
 
-assert.equal(evaluateRegression(null, passRuntime).action, 'no-op');
-assert.equal(evaluateRegression(passAuthoring, null).action, 'no-op');
+assert.equal(evaluateRegression(null).action, 'no-op');
 
 console.log('Live regression issue decision tests passed.');

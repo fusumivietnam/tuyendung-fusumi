@@ -50,24 +50,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium
 
-      - name: Audit live job authoring contract
-        run: node scripts/check_live_authoring.mjs
-
       - name: Verify rendered production runtime
-        if: always()
         run: node scripts/check_live_runtime.mjs
 
       - name: Verify responsive production layouts
         if: always()
         run: node scripts/check_live_responsive.mjs
-
-      - name: Upload live authoring report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: live-authoring-report
-          path: live-authoring-report.json
-          if-no-files-found: ignore
 
       - name: Upload live runtime report
         if: always()
