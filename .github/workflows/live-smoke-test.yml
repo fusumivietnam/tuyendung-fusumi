@@ -57,6 +57,10 @@ jobs:
         if: always()
         run: node scripts/check_live_runtime.mjs
 
+      - name: Verify responsive production layouts
+        if: always()
+        run: node scripts/check_live_responsive.mjs
+
       - name: Upload live authoring report
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,6 +75,14 @@ jobs:
         with:
           name: live-runtime-report
           path: live-runtime-report.json
+          if-no-files-found: ignore
+
+      - name: Upload live responsive report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-responsive-report
+          path: live-responsive-report.json
           if-no-files-found: ignore
 
       - name: Live status dashboard
