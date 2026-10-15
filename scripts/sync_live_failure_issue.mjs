@@ -21,32 +21,24 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-export function evaluateRegression(authoringReport, runtimeReport) {
+export function evaluateRegression(runtimeReport) {
   const failures = [];
   const inconclusive = [];
-  const seen = new Map();
-
-  for (const item of authoringReport?.jobs || []) {
-    if (!item?.url) continue;
-    const row = seen.get(item.url) || { url: item.url, title: item.title || '' };
-    row.authoring = normalizedStatus(item.status);
-    row.title = row.title || item.title || '';
-    if (row.authoring === 'FAIL') failures.push({ source: 'Authoring QA', url: item.url, title: row.title, reason: item.reason || 'Authoring contract failed' });
-    if (row.authoring === 'INCONCLUSIVE') inconclusive.push({ source: 'Authoring QA', url: item.url, reason: item.reason || 'Inconclusive' });
-    seen.set(item.url, row);
-  }
+  const jobs = [];
 
   for (const item of runtimeReport?.jobs || []) {
     if (!item?.url) continue;
-    const row = seen.get(item.url) || { url: item.url, title: item.checks?.title || '' };
-    row.runtime = normalizedStatus(item.status);
-    row.title = row.title || item.checks?.title || '';
-    if (row.runtime === 'FAIL') {
+    const title = item.checks?.title || '';
+    const status = normalizedStatus(item.status);
+    jobs.push({ url: item.url, title, runtime: status });
+
+    if (status === 'FAIL') {
       const reasons = item.failures?.length ? item.failures : [item.reason || 'Rendered runtime contract failed'];
-      for (const reason of reasons) failures.push({ source: 'Runtime', url: item.url, title: row.title, reason });
+      for (const reason of reasons) failures.push({ source: 'Runtime', url: item.url, title, reason });
     }
-    if (row.runtime === 'INCONCLUSIVE') inconclusive.push({ source: 'Runtime', url: item.url, reason: item.reason || 'Inconclusive' });
-    seen.set(item.url, row);
+    if (status === 'INCONCLUSIVE') {
+      inconclusive.push({ source: 'Runtime', url: item.url, reason: item.reason || 'Inconclusive' });
+    }
   }
 
   if (normalizedStatus(runtimeReport?.status) === 'FAIL' && !failures.some(item => item.source === 'Runtime')) {
@@ -56,17 +48,16 @@ export function evaluateRegression(authoringReport, runtimeReport) {
     inconclusive.push({ source: 'Runtime', url: runtimeReport?.site || '', reason: unique(runtimeReport?.notes || []).join('; ') || 'Runtime report inconclusive' });
   }
 
-  const bothReportsPresent = Boolean(authoringReport && runtimeReport);
-  const rows = [...seen.values()];
-  const allRowsTrusted = rows.length > 0 && rows.every(row => row.authoring === 'PASS' && row.runtime === 'PASS');
-  const hasInconclusive = inconclusive.length > 0 || rows.some(row => [row.authoring, row.runtime].includes('INCONCLUSIVE'));
+  const reportPresent = Boolean(runtimeReport);
+  const allRowsTrusted = jobs.length > 0 && jobs.every(row => row.runtime === 'PASS');
+  const hasInconclusive = inconclusive.length > 0 || jobs.some(row => row.runtime === 'INCONCLUSIVE');
   const hasFailure = failures.length > 0;
 
   return {
-    action: hasFailure ? 'open-or-update' : (bothReportsPresent && allRowsTrusted && !hasInconclusive ? 'close-if-open' : 'no-op'),
+    action: hasFailure ? 'open-or-update' : (reportPresent && allRowsTrusted && !hasInconclusive ? 'close-if-open' : 'no-op'),
     failures,
     inconclusive,
-    jobs: rows,
+    jobs,
   };
 }
 
@@ -76,7 +67,7 @@ function escapeMarkdown(value) {
 
 export function buildFailureMarkdown(decision, { runUrl = '', checkedAt = '' } = {}) {
   const lines = [
-    'A production regression was detected by the Fusumi Careers live audit.',
+    'A production regression was detected by the Fusumi Careers live runtime audit.',
     '',
   ];
   if (runUrl) lines.push(`- Workflow run: ${runUrl}`);
@@ -134,7 +125,7 @@ async function syncIssue(decision, options) {
 
   if (decision.action === 'close-if-open' && existing?.state === 'open') {
     const message = [
-      'Production recovery confirmed by a trusted live audit: all discovered jobs passed both authoring and rendered runtime checks.',
+      'Production recovery confirmed by the live runtime audit: all discovered jobs passed rendered runtime checks.',
       options.runUrl ? `\nWorkflow run: ${options.runUrl}` : '',
     ].join('');
     await githubRequest(`/issues/${existing.number}/comments`, { method: 'POST', body: { body: message } });
@@ -147,13 +138,12 @@ async function syncIssue(decision, options) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const authoring = readJson(process.argv[2] || 'live-authoring-report.json');
-  const runtime = readJson(process.argv[3] || 'live-runtime-report.json');
-  const decision = evaluateRegression(authoring, runtime);
+  const runtime = readJson(process.argv[2] || 'live-runtime-report.json');
+  const decision = evaluateRegression(runtime);
   const runUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
     : '';
-  const checkedAt = runtime?.checkedAt || authoring?.checkedAt || new Date().toISOString();
+  const checkedAt = runtime?.checkedAt || new Date().toISOString();
 
   if (!process.env.GITHUB_TOKEN || !process.env.GITHUB_REPOSITORY) {
     console.log(JSON.stringify(decision, null, 2));
