@@ -32,11 +32,6 @@ function escapeCell(value) {
   return String(value ?? '—').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim() || '—';
 }
 
-function labelValue(labels, prefix) {
-  const label = (labels || []).find(item => String(item).trim().startsWith(prefix));
-  return label ? String(label).trim().slice(prefix.length).trim() : '';
-}
-
 function failureMatches(runtime, pattern) {
   return (runtime?.failures || []).some(message => pattern.test(String(message)));
 }
@@ -74,80 +69,63 @@ function seoCell(runtime) {
   return canonical && description && description !== GENERIC_DESCRIPTION && !failed ? '✅' : '❌';
 }
 
-function summaryStatus(authoring, runtime) {
-  const values = [authoring?.status, runtime?.status].map(value => String(value || '').toUpperCase());
-  if (values.includes('FAIL')) return '❌ FAIL';
-  if (values.includes('INCONCLUSIVE') || values.includes('')) return '⚠️ INCONCLUSIVE';
-  return '✅ PASS';
-}
-
-export function renderSummary(authoringReport, runtimeReport) {
-  const byUrl = new Map();
-  for (const item of authoringReport?.jobs || []) {
-    if (!item?.url) continue;
-    byUrl.set(item.url, { ...(byUrl.get(item.url) || {}), authoring: item });
-  }
-  for (const item of runtimeReport?.jobs || []) {
-    if (!item?.url) continue;
-    byUrl.set(item.url, { ...(byUrl.get(item.url) || {}), runtime: item });
-  }
+export function renderSummary(runtimeReport) {
+  const jobs = [...(runtimeReport?.jobs || [])]
+    .filter(item => item?.url)
+    .sort((a, b) => a.url.localeCompare(b.url));
 
   const lines = [
     '## Fusumi Careers — Live Status Dashboard',
     '',
-    `- Site: ${runtimeReport?.site || authoringReport?.site || 'https://tuyendung.fusumi.vn/'}`,
-    `- Discovery: ${runtimeReport?.discovery?.source || authoringReport?.discovery?.source || 'unavailable'}`,
-    `- Checked: ${runtimeReport?.checkedAt || authoringReport?.checkedAt || 'unavailable'}`,
+    `- Site: ${runtimeReport?.site || 'https://tuyendung.fusumi.vn/'}`,
+    `- Discovery: ${runtimeReport?.discovery?.source || 'unavailable'}`,
+    `- Checked: ${runtimeReport?.checkedAt || 'unavailable'}`,
+    '- Monitoring scope: rendered production runtime and user-facing behavior',
     '- Legend: ✅ pass · ❌ fail · ⚠️ inconclusive · — unavailable',
     '',
-    '| Job | Location | Lifecycle | Authoring QA | Runtime | JobPosting | Apply | SEO |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Job | Lifecycle | Runtime | JobPosting | Apply | SEO |',
+    '| --- | --- | --- | --- | --- | --- |',
   ];
 
-  const rows = [...byUrl.entries()].sort(([a], [b]) => a.localeCompare(b));
-  if (!rows.length) {
-    lines.push('| No job data | — | — | ⚠️ | ⚠️ | — | — | — |');
+  if (!jobs.length) {
+    lines.push('| No job data | — | ⚠️ | — | — | — |');
   }
 
-  for (const [url, pair] of rows) {
-    const authoring = pair.authoring;
-    const runtime = pair.runtime;
-    const title = authoring?.title || runtime?.checks?.title || new URL(url).pathname.split('/').pop()?.replace(/\.html$/, '') || url;
-    const location = labelValue(authoring?.labels, 'ĐĐ:') || '—';
-    const lifecycle = runtime?.lifecycle || authoring?.lifecycle || 'inconclusive';
+  for (const runtime of jobs) {
+    const url = runtime.url;
+    const title = runtime.checks?.title || new URL(url).pathname.split('/').pop()?.replace(/\.html$/, '') || url;
+    const lifecycle = runtime.lifecycle || 'inconclusive';
     const linkedTitle = `[${escapeCell(title)}](${url})`;
-    lines.push(`| ${linkedTitle} | ${escapeCell(location)} | ${lifecycleBadge(lifecycle)} | ${statusBadge(authoring?.status)} | ${statusBadge(runtime?.status)} | ${jobPostingCell(runtime, lifecycle)} | ${applyCell(runtime, lifecycle)} | ${seoCell(runtime)} |`);
+    lines.push(`| ${linkedTitle} | ${lifecycleBadge(lifecycle)} | ${statusBadge(runtime.status)} | ${jobPostingCell(runtime, lifecycle)} | ${applyCell(runtime, lifecycle)} | ${seoCell(runtime)} |`);
   }
 
   const totals = { pass: 0, fail: 0, inconclusive: 0, open: 0, expired: 0 };
-  for (const [, pair] of rows) {
-    const status = summaryStatus(pair.authoring, pair.runtime);
-    if (status.includes('FAIL')) totals.fail += 1;
-    else if (status.includes('INCONCLUSIVE')) totals.inconclusive += 1;
-    else totals.pass += 1;
-    const lifecycle = pair.runtime?.lifecycle || pair.authoring?.lifecycle;
-    if (lifecycle === 'open') totals.open += 1;
-    if (lifecycle === 'expired') totals.expired += 1;
+  for (const runtime of jobs) {
+    const status = String(runtime.status || '').toUpperCase();
+    if (status === 'FAIL') totals.fail += 1;
+    else if (status === 'PASS') totals.pass += 1;
+    else totals.inconclusive += 1;
+    if (runtime.lifecycle === 'open') totals.open += 1;
+    if (runtime.lifecycle === 'expired') totals.expired += 1;
   }
 
   lines.push('', `**Overall:** ✅ ${totals.pass} pass · ❌ ${totals.fail} fail · ⚠️ ${totals.inconclusive} inconclusive · 🟢 ${totals.open} open · ⚫ ${totals.expired} expired`);
 
-  const notes = [...(authoringReport?.discovery?.notes || []), ...(runtimeReport?.notes || [])];
+  const notes = runtimeReport?.notes || [];
   if (notes.length) {
     lines.push('', '<details><summary>Notes / diagnostics</summary>', '');
     for (const note of [...new Set(notes)]) lines.push(`- ${escapeCell(note)}`);
     lines.push('', '</details>');
   }
 
-  if (!authoringReport || !runtimeReport) {
-    lines.push('', '> ⚠️ One or more JSON reports were unavailable. Dashboard cells marked `—` or `INCONCLUSIVE` are not treated as production regressions by this renderer.');
+  if (!runtimeReport) {
+    lines.push('', '> ⚠️ Runtime JSON report was unavailable. This dashboard does not treat missing or inconclusive data as a production regression.');
   }
 
   return `${lines.join('\n')}\n`;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const authoring = readJson(process.argv[2] || 'live-authoring-report.json');
-  const runtime = readJson(process.argv[3] || 'live-runtime-report.json');
-  process.stdout.write(renderSummary(authoring, runtime));
+  const runtime = readJson(process.argv[2] || 'live-runtime-report.json');
+  process.stdout.write(renderSummary(runtime));
 }
