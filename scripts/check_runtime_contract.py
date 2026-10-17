@@ -13,6 +13,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "templates" / "fusumi-careers-runtime.html"
+CONFIG = ROOT / "templates" / "fusumi-careers-config.html"
 FOOTER = ROOT / "templates" / "footer-contact.html"
 CSS = ROOT / "blogger" / "fusumi-careers-custom.css"
 PAGES = {
@@ -40,6 +41,7 @@ def require(name: str, text: str, markers: list[str]) -> None:
 
 def main() -> None:
     runtime = read(RUNTIME)
+    config = read(CONFIG)
     footer = read(FOOTER)
     css = read(CSS)
     pages = {name: read(path) for name, path in PAGES.items()}
@@ -81,8 +83,26 @@ def main() -> None:
         ],
     )
 
-    if "document.querySelector('.content[itemtype*=\"JobPosting\"]')" in runtime:
+    require(
+        "config",
+        config,
+        [
+            "id=\"fusumi-careers-config\"",
+            "function jobScope()",
+            "var scope=jobScope();",
+            "enforceJobLifecycle",
+            "applyOperationalOverrides",
+            "data-apply-page",
+            "data-google-form-url",
+        ],
+    )
+
+    legacy_selector = "document.querySelector('.content[itemtype*=\"JobPosting\"]')"
+    legacy_query_all = "document.querySelectorAll('.content[itemtype*=\"JobPosting\"]"
+    if legacy_selector in runtime:
         fail("runtime must not depend on legacy JobPosting microdata to identify job pages")
+    if legacy_selector in config or legacy_query_all in config:
+        fail("config must not depend on legacy JobPosting microdata to identify job pages")
 
     if runtime.count("script.id='fusumi-jobposting-jsonld'") != 1:
         fail("runtime must emit exactly one managed Fusumi JobPosting JSON-LD script")
@@ -149,6 +169,7 @@ def main() -> None:
     print("- CSS is centralized in blogger/fusumi-careers-custom.css")
     print("- Footer is HTML-only")
     print("- Runtime owns apply flow + Google Form prefill + one JobPosting JSON-LD source")
+    print("- Runtime and Config identify job pages independently from legacy microdata")
     print("- JobPosting canonical/datePosted are resolved from the Blogger feed")
     print("- Legacy JobPosting microdata is removed before JSON-LD emission")
     print("- Apply Page keeps email fallback when Google Form is not configured")
