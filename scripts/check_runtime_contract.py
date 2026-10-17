@@ -13,6 +13,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "templates" / "fusumi-careers-runtime.html"
+CONFIG = ROOT / "templates" / "fusumi-careers-config.html"
 FOOTER = ROOT / "templates" / "footer-contact.html"
 CSS = ROOT / "blogger" / "fusumi-careers-custom.css"
 PAGES = {
@@ -40,6 +41,7 @@ def require(name: str, text: str, markers: list[str]) -> None:
 
 def main() -> None:
     runtime = read(RUNTIME)
+    config = read(CONFIG)
     footer = read(FOOTER)
     css = read(CSS)
     pages = {name: read(path) for name, path in PAGES.items()}
@@ -66,8 +68,44 @@ def main() -> None:
             "url.searchParams.set('vi-tri',title)",
             "url.searchParams.set('job',canonical)",
             "mailto:hr@fusumi.vn",
+            "function jobScope()",
+            "var scope=jobScope();",
+            "scope.removeAttribute(attr)",
+            "node.removeAttribute('itemprop')",
+            "function bloggerPostMeta(canonical,title)",
+            "url:links[j].href",
+            "entryTitle=normalize(entries[k].title&&entries[k].title.$t||'')",
+            "return bloggerPostMeta(canonical,schemaTitle)",
+            "canonical=normalizeUrl(meta.url)",
+            "canonicalLink.href=canonical",
+            "'url':canonical",
+            "'datePosted':meta.published.slice(0,10)",
         ],
     )
+
+    require(
+        "config",
+        config,
+        [
+            "id=\"fusumi-careers-config\"",
+            "function jobScope()",
+            "var scope=jobScope();",
+            "enforceJobLifecycle",
+            "applyOperationalOverrides",
+            "data-apply-page",
+            "data-google-form-url",
+        ],
+    )
+
+    legacy_selector = "document.querySelector('.content[itemtype*=\"JobPosting\"]')"
+    legacy_query_all = "document.querySelectorAll('.content[itemtype*=\"JobPosting\"]"
+    if legacy_selector in runtime:
+        fail("runtime must not depend on legacy JobPosting microdata to identify job pages")
+    if legacy_selector in config or legacy_query_all in config:
+        fail("config must not depend on legacy JobPosting microdata to identify job pages")
+
+    if runtime.count("script.id='fusumi-jobposting-jsonld'") != 1:
+        fail("runtime must emit exactly one managed Fusumi JobPosting JSON-LD script")
 
     if "<style" in runtime.lower():
         fail("runtime gadget must not contain CSS/style blocks")
@@ -130,7 +168,10 @@ def main() -> None:
     print("Runtime contract validation passed.")
     print("- CSS is centralized in blogger/fusumi-careers-custom.css")
     print("- Footer is HTML-only")
-    print("- Runtime owns apply flow + Google Form prefill + JobPosting JSON-LD")
+    print("- Runtime owns apply flow + Google Form prefill + one JobPosting JSON-LD source")
+    print("- Runtime and Config identify job pages independently from legacy microdata")
+    print("- JobPosting canonical/datePosted are resolved from the Blogger feed")
+    print("- Legacy JobPosting microdata is removed before JSON-LD emission")
     print("- Apply Page keeps email fallback when Google Form is not configured")
     print("- Static Page templates expose expected runtime hooks")
 
