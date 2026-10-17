@@ -371,7 +371,7 @@
     }
   }
 
-  function bloggerPostMeta(canonical){
+  function bloggerPostMeta(canonical,title){
     return fetch('/feeds/posts/default?alt=json&max-results=500',{credentials:'same-origin'})
       .then(function(response){
         if(!response.ok)throw new Error('Blogger feed HTTP '+response.status);
@@ -385,6 +385,7 @@
           for(var j=0;j<links.length;j++){
             if(links[j].rel==='alternate'&&normalizeUrl(links[j].href)===wanted){
               return {
+                url:links[j].href,
                 id:entries[i].id&&entries[i].id.$t||canonical,
                 published:entries[i].published&&entries[i].published.$t||'',
                 updated:entries[i].updated&&entries[i].updated.$t||''
@@ -392,13 +393,45 @@
             }
           }
         }
+        if(title){
+          var normalizedTitle=normalize(title);
+          for(var k=0;k<entries.length;k++){
+            var entryTitle=normalize(entries[k].title&&entries[k].title.$t||'');
+            if(entryTitle!==normalizedTitle)continue;
+            var entryLinks=entries[k].link||[];
+            for(var m=0;m<entryLinks.length;m++){
+              if(entryLinks[m].rel==='alternate'){
+                return {
+                  url:entryLinks[m].href,
+                  id:entries[k].id&&entries[k].id.$t||canonical,
+                  published:entries[k].published&&entries[k].published.$t||'',
+                  updated:entries[k].updated&&entries[k].updated.$t||''
+                };
+              }
+            }
+          }
+        }
         return null;
       });
   }
 
+  function jobScope(){
+    var scope=document.querySelector('.content');
+    if(!scope||!scope.querySelector('h1')||!scope.querySelector('.post-body'))return null;
+    var labels=getRawLabels(scope);
+    var isJob=labels.some(function(label){
+      return label.indexOf('PB:')===0||label.indexOf('ĐĐ:')===0||label.indexOf('HT:')===0;
+    });
+    return isJob?scope:null;
+  }
+
   function injectJobPosting(){
-    var scope=document.querySelector('.content[itemtype*="JobPosting"]');
+    var scope=jobScope();
     if(!scope)return Promise.resolve();
+
+    // Remove legacy JobPosting microdata so Fusumi JSON-LD is the single schema source.
+    ['itemscope','itemtype','itemid'].forEach(function(attr){scope.removeAttribute(attr);});
+    [].slice.call(scope.querySelectorAll('[itemprop]')).forEach(function(node){node.removeAttribute('itemprop');});
 
     var h1=scope.querySelector('h1');
     var body=scope.querySelector('.post-body');
@@ -415,11 +448,22 @@
     var canonical=ensureCanonical();
     ensureJobMetaDescription(schemaTitle,locationValue,typeValue);
 
-    return bloggerPostMeta(canonical)
+    return bloggerPostMeta(canonical,schemaTitle)
       .then(function(meta){
         if(!meta||!meta.published){
           if(window.console&&console.warn)console.warn('Fusumi JobPosting: missing Blogger datePosted; JSON-LD not emitted.');
           return;
+        }
+
+        if(meta.url){
+          canonical=normalizeUrl(meta.url);
+          var canonicalLink=document.querySelector('link[rel="canonical"]');
+          if(!canonicalLink){
+            canonicalLink=document.createElement('link');
+            canonicalLink.rel='canonical';
+            document.head.appendChild(canonicalLink);
+          }
+          canonicalLink.href=canonical;
         }
 
         var data={
@@ -528,7 +572,7 @@
   }
 
   function enhanceApplyLinks(){
-    var scope=document.querySelector('.content[itemtype*="JobPosting"]');
+    var scope=jobScope();
     if(!scope)return;
 
     var h1=scope.querySelector('h1');
