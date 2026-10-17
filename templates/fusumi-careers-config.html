@@ -18,6 +18,18 @@
   function value(name){return (root.getAttribute(name)||'').trim();}
   function normalize(text){return (text||'').replace(/\s+/g,' ').trim();}
 
+  function jobScope(){
+    var scope=document.querySelector('.content');
+    if(!scope||!scope.querySelector('h1')||!scope.querySelector('.post-body'))return null;
+    var labels=[].slice.call(scope.querySelectorAll('.chip')).map(function(chip){
+      return normalize(chip.getAttribute('data-raw')||chip.textContent);
+    });
+    var isJob=labels.some(function(label){
+      return label.indexOf('PB:')===0||label.indexOf('ĐĐ:')===0||label.indexOf('HT:')===0;
+    });
+    return isJob?scope:null;
+  }
+
   function applyFormConfig(){
     var page=document.querySelector('.fusumi-apply-page');
     if(!page)return;
@@ -40,11 +52,12 @@
     }
 
     var applyPage=value('data-apply-page');
-    if(applyPage){
+    var scope=jobScope();
+    if(applyPage&&scope){
       try{
         var target=new URL(applyPage,location.origin);
         if(target.origin===location.origin){
-          [].slice.call(document.querySelectorAll('.content[itemtype*="JobPosting"] .apply a,.content[itemtype*="JobPosting"] .job-cta a')).forEach(function(link){
+          [].slice.call(scope.querySelectorAll('.apply a,.job-cta a')).forEach(function(link){
             var href=link.getAttribute('href')||'';
             if(/^(mailto:|tel:|sms:|javascript:)/i.test(href))return;
             if(!/ứng tuyển/i.test((link.textContent||'').trim())&&link.getAttribute('data-apply-link')===null)return;
@@ -98,7 +111,7 @@
   }
 
   function enforceJobLifecycle(){
-    var scope=document.querySelector('.content[itemtype*="JobPosting"]');
+    var scope=jobScope();
     if(!scope)return;
     var body=scope.querySelector('.post-body');
     if(!body)return;
