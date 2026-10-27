@@ -17,10 +17,10 @@ jobs:
     name: live-smoke-test
     runs-on: ubuntu-latest
     env:
-      PLAYWRIGHT_VERSION: '1.55.0'
+      PLAYWRIGHT_VERSION: '1.63.0'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Validate runtime source contracts
         run: python scripts/check_runtime_contract.py
@@ -29,22 +29,20 @@ jobs:
         run: python scripts/check_live_site.py --site https://tuyendung.fusumi.vn/ --min-jobs 1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
+          package-manager-cache: false
 
       - name: Install Playwright test runner
         run: npm install --no-save @playwright/test@${PLAYWRIGHT_VERSION}
 
       - name: Restore Playwright browser cache
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}-chromium
-
-      - name: Install Chromium system dependencies
-        run: npx playwright install-deps chromium
 
       - name: Install Chromium browser on cache miss
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -81,7 +79,7 @@ jobs:
 
       - name: Upload live runtime report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: live-runtime-report
           path: live-runtime-report.json
@@ -89,7 +87,7 @@ jobs:
 
       - name: Upload live responsive report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: live-responsive-report
           path: live-responsive-report.json
