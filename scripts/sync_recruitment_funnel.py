@@ -10,9 +10,6 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
-from google.auth.transport.requests import AuthorizedSession
-from google.oauth2 import service_account
-
 from scripts.report_recruitment_funnel import normalize_url, render_dashboard
 
 
@@ -21,6 +18,8 @@ SCOPES = ["https://www.googleapis.com/auth/analytics.readonly",
 
 
 def google_session(credentials_json):
+    from google.auth.transport.requests import AuthorizedSession
+    from google.oauth2 import service_account
     info = json.loads(credentials_json)
     creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
     return AuthorizedSession(creds)
