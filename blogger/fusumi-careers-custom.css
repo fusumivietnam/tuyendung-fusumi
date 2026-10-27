@@ -786,6 +786,33 @@ select:focus-visible{
     white-space:pre-wrap;
   }
 
+  /* Blogger's heading and separator markup can carry intrinsic content width.
+     Break long titles and constrain image wrappers without clipping page scroll. */
+  .post-body h2,
+  .post-body h3{
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    white-space:normal;
+  }
+
+  .post-body .separator{
+    max-width:100%;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+
+  .post-body .separator :is(a, img, picture){
+    max-width:100%;
+    height:auto;
+  }
+
+  .post-body .separator img{
+    width:auto;
+    object-fit:contain;
+  }
+
   .post-body :is(table, iframe, video, canvas, svg){
     max-width:100%;
   }
