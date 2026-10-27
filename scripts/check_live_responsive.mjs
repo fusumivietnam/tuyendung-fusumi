@@ -135,6 +135,19 @@ async function inspectPage(browser, path, viewport, label) {
         .sort((a,b) => (b.scrollWidth-b.clientWidth)-(a.scrollWidth-a.clientWidth))
         .slice(0, 16);
 
+      const richWidthDetails = [...document.querySelectorAll('.post-body h2, .post-body .separator')]
+        .map(element => {
+          const style = getComputedStyle(element);
+          const before = getComputedStyle(element, '::before');
+          const after = getComputedStyle(element, '::after');
+          const nodes = [...element.querySelectorAll('*')].slice(0, 16).map(child => {
+            const r = child.getBoundingClientRect();
+            const cs = getComputedStyle(child);
+            return { tag:child.tagName.toLowerCase(), className:typeof child.className === 'string' ? child.className.slice(0, 80) : '', right:Math.round(r.right), width:Math.round(r.width), scrollWidth:child.scrollWidth, marginLeft:cs.marginLeft, marginRight:cs.marginRight, inlineStyle:(child.getAttribute('style') || '').slice(0, 180) };
+          });
+          return { tag:element.tagName.toLowerCase(), className:element.className, text:(element.textContent || '').slice(0, 70), clientWidth:element.clientWidth, scrollWidth:element.scrollWidth, overflowX:style.overflowX, wordBreak:style.wordBreak, overflowWrap:style.overflowWrap, whiteSpace:style.whiteSpace, pseudoBefore:before.content, pseudoAfter:after.content, children:nodes };
+        });
+
       const controls = [];
       document.querySelectorAll('.toolbar input,.toolbar select,.summary .clear,.apply .btn,.fusumi-apply-actions .btn').forEach((element) => {
         if (!visible(element)) return;
@@ -171,6 +184,7 @@ async function inspectPage(browser, path, viewport, label) {
         horizontalOverflow: scrollWidth > width + 1,
         offenders,
         scrollCandidates,
+        richWidthDetails,
         bounds,
         controls,
         tables,
@@ -180,7 +194,7 @@ async function inspectPage(browser, path, viewport, label) {
     item.checks.layout = layout;
 
     if (layout.horizontalOverflow) {
-      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}. Offenders: ${JSON.stringify(layout.offenders)}; Scroll candidates: ${JSON.stringify(layout.scrollCandidates)}`);
+      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}. Offenders: ${JSON.stringify(layout.offenders)}; Scroll candidates: ${JSON.stringify(layout.scrollCandidates)}; Rich widths: ${JSON.stringify(layout.richWidthDetails)}`);
     }
 
     for (const bound of layout.bounds) {
