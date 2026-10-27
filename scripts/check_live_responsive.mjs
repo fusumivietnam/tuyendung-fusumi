@@ -97,6 +97,22 @@ async function inspectPage(browser, path, viewport, label) {
         });
       }
 
+      const offenders = [...document.querySelectorAll('body *')]
+        .filter(element => visible(element))
+        .map(element => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName.toLowerCase(),
+            className: typeof element.className === 'string' ? element.className.slice(0,100) : '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          };
+        })
+        .filter(element => element.right > width + 1 || element.left < -1)
+        .slice(0, 12);
+
       const controls = [];
       document.querySelectorAll('.toolbar input,.toolbar select,.summary .clear,.apply .btn,.fusumi-apply-actions .btn').forEach((element) => {
         if (!visible(element)) return;
@@ -131,6 +147,7 @@ async function inspectPage(browser, path, viewport, label) {
         viewportWidth: width,
         scrollWidth,
         horizontalOverflow: scrollWidth > width + 1,
+        offenders,
         bounds,
         controls,
         tables,
@@ -140,7 +157,7 @@ async function inspectPage(browser, path, viewport, label) {
     item.checks.layout = layout;
 
     if (layout.horizontalOverflow) {
-      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}.`);
+      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}. Offenders: ${JSON.stringify(layout.offenders)}`);
     }
 
     for (const bound of layout.bounds) {

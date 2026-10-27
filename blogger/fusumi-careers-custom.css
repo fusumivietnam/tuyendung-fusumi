@@ -766,6 +766,30 @@ select:focus-visible{
     -webkit-overflow-scrolling:touch;
   }
 
+  /* Keep job-detail rich content within the 390px viewport.
+     Scroll wide preformatted content locally instead of clipping the page. */
+  .content,
+  .post-body,
+  .post-body > *,
+  .apply{
+    min-width:0;
+    max-width:100%;
+  }
+
+  .post-body pre,
+  .post-body code{
+    overflow-wrap:anywhere;
+  }
+
+  .post-body pre{
+    overflow-x:auto;
+    white-space:pre-wrap;
+  }
+
+  .post-body :is(table, iframe, video, canvas, svg){
+    max-width:100%;
+  }
+
   .apply .btn{
     width:100%;
   }
