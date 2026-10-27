@@ -15,7 +15,9 @@ def normalize_url(value):
     parts = urlsplit(value)
     if parts.scheme not in ("http", "https") or not parts.netloc:
         return ""
-    return urlunsplit(("https", parts.netloc.lower(), parts.path.rstrip("/") or "/", "", ""))
+    if parts.hostname != "tuyendung.fusumi.vn" or parts.port not in (None, 80, 443):
+        return ""
+    return urlunsplit(("https", "tuyendung.fusumi.vn", parts.path.rstrip("/") or "/", "", ""))
 
 
 def read_csv(path):
@@ -34,13 +36,18 @@ def number(value):
 def aggregate(events_path, responses_path):
     metrics = defaultdict(lambda: {"job_url": "", "page_views": 0, "apply_clicks": 0, "applications": 0})
     for row in read_csv(events_path):
-        url = normalize_url(row.get("job_url", ""))
+        url = normalize_url(row.get("job_url") or row.get("page_location") or row.get("pageLocation") or row.get("Page location") or "")
         if not url:
             continue
+        event = (row.get("event_name") or row.get("eventName") or "").strip()
+        # Only published job pages are comparable with form submission URLs.
+        if not (urlsplit(url).path.endswith(".html") and "/20" in urlsplit(url).path):
+            continue
+        if event not in ("page_view", "fusumi_apply_click"):
+            continue
+        count = number(row.get("event_count") or row.get("eventCount") or "0")
         item = metrics[url]
         item["job_url"] = url
-        event = (row.get("event_name") or "").strip()
-        count = number(row.get("event_count") or "0")
         if event == "page_view":
             item["page_views"] += count
         elif event == "fusumi_apply_click":
@@ -48,6 +55,8 @@ def aggregate(events_path, responses_path):
     for row in read_csv(responses_path):
         url = normalize_url(row.get("URL tin tuyển dụng") or row.get("job_url") or "")
         if not url:
+            continue
+        if not (urlsplit(url).path.endswith(".html") and "/20" in urlsplit(url).path):
             continue
         item = metrics[url]
         item["job_url"] = url
