@@ -57,6 +57,28 @@ jobs:
         if: always()
         run: node scripts/check_live_responsive.mjs
 
+      - name: Require conclusive production PASS
+        if: always()
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          let failed = false;
+          for (const [name, path] of [
+            ['Runtime', 'live-runtime-report.json'],
+            ['Responsive', 'live-responsive-report.json'],
+          ]) {
+            let status = 'MISSING';
+            try { status = String(JSON.parse(fs.readFileSync(path, 'utf8')).status || 'MISSING').toUpperCase(); }
+            catch { /* missing or invalid report cannot pass */ }
+            console.log(`${name} audit status: ${status}`);
+            if (status !== 'PASS') failed = true;
+          }
+          if (failed) {
+            console.error('Live production verification is not conclusively PASS (FAIL/INCONCLUSIVE/MISSING).');
+            process.exitCode = 1;
+          }
+          NODE
+
       - name: Upload live runtime report
         if: always()
         uses: actions/upload-artifact@v4
