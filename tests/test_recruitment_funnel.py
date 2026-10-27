@@ -10,6 +10,7 @@ class RecruitmentFunnelTests(unittest.TestCase):
         self.assertEqual(normalize_url("http://TUYENDUNG.FUSUMI.VN/a.html?utm_source=x#apply"),
                          "https://tuyendung.fusumi.vn/a.html")
         self.assertEqual(normalize_url("not-a-url"), "")
+        self.assertEqual(normalize_url("https://evil.example/2026/10/job.html"), "")
 
     def test_aggregate_distinguishes_clicks_and_submissions(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -18,21 +19,43 @@ class RecruitmentFunnelTests(unittest.TestCase):
             with events.open("w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(file, fieldnames=["job_url", "event_name", "event_count"])
                 writer.writeheader()
-                writer.writerow({"job_url": "https://tuyendung.fusumi.vn/job.html", "event_name": "page_view", "event_count": 100})
-                writer.writerow({"job_url": "https://tuyendung.fusumi.vn/job.html?utm_source=x", "event_name": "fusumi_apply_click", "event_count": 12})
+                writer.writerow({"job_url": "https://tuyendung.fusumi.vn/2026/10/job.html", "event_name": "page_view", "event_count": 100})
+                writer.writerow({"job_url": "https://tuyendung.fusumi.vn/2026/10/job.html?utm_source=x", "event_name": "fusumi_apply_click", "event_count": 12})
             with responses.open("w", encoding="utf-8", newline="") as file:
                 writer = csv.DictWriter(file, fieldnames=["URL tin tuyển dụng", "Email"])
                 writer.writeheader()
                 for email in ("private1@example.com", "private2@example.com"):
-                    writer.writerow({"URL tin tuyển dụng": "https://tuyendung.fusumi.vn/job.html", "Email": email})
+                    writer.writerow({"URL tin tuyển dụng": "https://tuyendung.fusumi.vn/2026/10/job.html", "Email": email})
             rows = aggregate(events, responses)
-            self.assertEqual(rows, [{"job_url": "https://tuyendung.fusumi.vn/job.html", "page_views": 100,
+            self.assertEqual(rows, [{"job_url": "https://tuyendung.fusumi.vn/2026/10/job.html", "page_views": 100,
                                      "apply_clicks": 12, "applications": 2, "click_through_rate": 0.12}])
             self.assertNotIn("Email", rows[0])
 
 
+    def test_native_ga4_columns_and_non_job_filtering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            events = Path(directory) / "events.csv"
+            responses = Path(directory) / "responses.csv"
+            with events.open("w", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(file, fieldnames=["pageLocation", "eventName", "eventCount"])
+                writer.writeheader()
+                writer.writerow({"pageLocation": "https://tuyendung.fusumi.vn/2026/10/job.html?utm=a",
+                                 "eventName": "page_view", "eventCount": "50"})
+                writer.writerow({"pageLocation": "https://tuyendung.fusumi.vn/",
+                                 "eventName": "page_view", "eventCount": "999"})
+                writer.writerow({"pageLocation": "https://evil.example/2026/10/other.html",
+                                 "eventName": "fusumi_apply_click", "eventCount": "100"})
+            with responses.open("w", encoding="utf-8", newline="") as file:
+                writer = csv.DictWriter(file, fieldnames=["URL tin tuyển dụng"])
+                writer.writeheader()
+                writer.writerow({"URL tin tuyển dụng": "https://tuyendung.fusumi.vn/2026/10/job.html"})
+            rows = aggregate(events, responses)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["page_views"], 50)
+            self.assertEqual(rows[0]["applications"], 1)
+
     def test_dashboard_escapes_html_and_contains_only_aggregates(self):
-        rows = [{"job_url": "https://tuyendung.fusumi.vn/a%22%3E%3Cscript%3E.html",
+        rows = [{"job_url": "https://tuyendung.fusumi.vn/2026/10/a%22%3E%3Cscript%3E.html",
                  "page_views": 100, "apply_clicks": 12, "applications": 2, "click_through_rate": 0.12}]
         html = render_dashboard(rows)
         self.assertIn("Hồ sơ Form", html)
