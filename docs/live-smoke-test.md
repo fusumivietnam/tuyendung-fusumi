@@ -56,12 +56,19 @@ A machine-readable `live-runtime-report.json` artifact is uploaded on every run.
 
 CI and `Live Smoke Test` pin the same Playwright version and cache `~/.cache/ms-playwright` with a key derived from runner OS + Playwright version + Chromium.
 
-- system dependencies are still installed on every fresh runner;
+- GitHub Actions run on Node.js 24, with pinned Playwright 1.63.0;
+- the unconditional `playwright install-deps chromium` step has been removed to shorten runner startup; compatibility is validated through actual browser tests on `ubuntu-latest`;
 - Chromium browser binaries are downloaded only on cache miss;
 - changing the pinned Playwright version automatically rotates the cache key;
 - cache failure never changes runtime verification semantics: a miss simply installs Chromium normally.
 
 This avoids repeatedly downloading the large Chromium archive on routine runs while keeping browser/runtime behavior deterministic.
+
+### Strict production sign-off
+
+The `Require conclusive production PASS` step reads `live-runtime-report.json` and `live-responsive-report.json`. GitHub Actions succeeds only when **both** reports say `PASS`. An HTTP 429 causes `INCONCLUSIVE`, and the run must **not** be treated as production PASS even if earlier probe commands exited 0. Missing reports and `FAIL` likewise prevent a green workflow. Artifacts and job summary are retained for diagnosis.
+
+For acceptance of mobile layout, require all eight viewport/page combinations (Homepage, Search, Apply, Live job, each at 390px and 1366px); a skipped job due to rate limit is not a pass.
 
 If Blogger or the Blogger feed returns HTTP 429, the affected rendered check is reported as **inconclusive** where possible rather than being treated as a false production regression. Real contract failures still fail the workflow.
 
