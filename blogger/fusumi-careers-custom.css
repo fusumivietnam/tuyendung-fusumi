@@ -808,8 +808,21 @@ select:focus-visible{
     height:auto;
   }
 
+  /* Blogger inserts inline 1em side margins on linked post images.
+     At 390px viewport a 320px image + 2x23px margin overflows its container. */
+  .post-body .separator > a{
+    display:inline-block;
+    max-width:100%;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    vertical-align:middle;
+  }
+
   .post-body .separator img{
+    display:block;
     width:auto;
+    max-width:100%;
+    height:auto;
     object-fit:contain;
   }
 
