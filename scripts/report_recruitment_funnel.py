@@ -39,13 +39,15 @@ def aggregate(events_path, responses_path):
         url = normalize_url(row.get("job_url") or row.get("page_location") or row.get("pageLocation") or row.get("Page location") or "")
         if not url:
             continue
-        item = metrics[url]
-        item["job_url"] = url
         event = (row.get("event_name") or row.get("eventName") or "").strip()
-        count = number(row.get("event_count") or row.get("eventCount") or "0")
         # Only published job pages are comparable with form submission URLs.
         if not (urlsplit(url).path.endswith(".html") and "/20" in urlsplit(url).path):
             continue
+        if event not in ("page_view", "fusumi_apply_click"):
+            continue
+        count = number(row.get("event_count") or row.get("eventCount") or "0")
+        item = metrics[url]
+        item["job_url"] = url
         if event == "page_view":
             item["page_views"] += count
         elif event == "fusumi_apply_click":
