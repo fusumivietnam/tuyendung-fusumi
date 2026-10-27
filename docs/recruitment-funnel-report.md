@@ -27,3 +27,16 @@ Báo cáo chỉ chứa `job_url,page_views,apply_clicks,applications,click_throu
 ## Quy tắc an toàn
 
 Không đưa file ứng viên có tên, email, điện thoại, CV vào GitHub hoặc issue. Chỉ commit script, test và tài liệu; không commit CSV dữ liệu thực. Khi cần chia sẻ báo cáo, chỉ sử dụng file tổng hợp đã kiểm tra không chứa PII.
+
+
+## Dashboard HTML ngoại tuyến
+
+Để tạo thêm trang báo cáo có các KPI và bảng theo vị trí:
+
+```bash
+python scripts/report_recruitment_funnel.py --events events.csv --responses responses.csv --output funnel-summary.csv --html-output funnel-dashboard.html
+```
+
+Mở `funnel-dashboard.html` bằng trình duyệt trên máy tính. Trang là HTML tĩnh, không dùng thư viện, JavaScript hoặc API bên ngoài. Báo cáo chỉ trình bày số liệu tổng hợp; **không upload dashboard hoặc file hồ sơ ứng viên lên public GitHub Pages/Blogger**.
+
+Dashboard thống kê lượt xem, click, phản hồi Form, và CTR (click/view); không xác nhận ứng viên duy nhất hay số hồ sơ email. Người vận hành cần xuất hai nguồn theo cùng thời kỳ; đây chưa phải tích hợp GA4/Google Sheets tự động.

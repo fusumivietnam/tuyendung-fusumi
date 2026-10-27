@@ -2,7 +2,7 @@ import csv
 import tempfile
 import unittest
 from pathlib import Path
-from scripts.report_recruitment_funnel import aggregate, normalize_url
+from scripts.report_recruitment_funnel import aggregate, normalize_url, render_dashboard
 
 
 class RecruitmentFunnelTests(unittest.TestCase):
@@ -29,6 +29,17 @@ class RecruitmentFunnelTests(unittest.TestCase):
             self.assertEqual(rows, [{"job_url": "https://tuyendung.fusumi.vn/job.html", "page_views": 100,
                                      "apply_clicks": 12, "applications": 2, "click_through_rate": 0.12}])
             self.assertNotIn("Email", rows[0])
+
+
+    def test_dashboard_escapes_html_and_contains_only_aggregates(self):
+        rows = [{"job_url": "https://tuyendung.fusumi.vn/a%22%3E%3Cscript%3E.html",
+                 "page_views": 100, "apply_clicks": 12, "applications": 2, "click_through_rate": 0.12}]
+        html = render_dashboard(rows)
+        self.assertIn("Hồ sơ Form", html)
+        self.assertIn("12.0%", html)
+        self.assertIn("Content-Security-Policy", html)
+        self.assertNotIn("<script>", html)
+        self.assertNotIn("private1@example.com", html)
 
 
 if __name__ == "__main__":
