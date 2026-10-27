@@ -29,7 +29,7 @@ jobs:
         run: python scripts/check_job_template.py
 
       - name: Test Python QA and live probe
-        run: python -m unittest tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py
+        run: python -m unittest tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py tests/test_recruitment_funnel.py
 
       - name: Validate repository files
         shell: bash
@@ -51,6 +51,9 @@ jobs:
           test -f production-fixes/issue-62/ke-toan-noi-bo.html
           test -f production-fixes/issue-62/nvkd-mien-trung.html
           test -f blogger/fusumi-careers-custom.css
+          test -f scripts/report_recruitment_funnel.py
+          test -f tests/test_recruitment_funnel.py
+          test -f docs/recruitment-funnel-report.md
           test -f scripts/validate_theme.py
           test -f scripts/check_live_site.py
           test -f scripts/check_live_authoring.mjs
@@ -76,7 +79,7 @@ jobs:
           ! grep -RInE '^(<<<<<<<|=======|>>>>>>>)' . --exclude-dir=.git
 
       - name: Compile Python scripts
-        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py
+        run: python -m py_compile scripts/validate_theme.py scripts/check_live_site.py scripts/check_runtime_contract.py scripts/check_job_template.py scripts/check_job_authoring.py scripts/report_recruitment_funnel.py tests/test_recruitment_funnel.py tests/test_job_authoring_qa.py tests/test_live_site_probe.py tests/test_playwright_cache_contract.py tests/test_production_job_fixes.py
 
       - name: Setup Node
         uses: actions/setup-node@v7

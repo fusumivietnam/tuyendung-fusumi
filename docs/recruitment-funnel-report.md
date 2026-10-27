@@ -1,0 +1,29 @@
+# Báo cáo hiệu quả tuyển dụng theo vị trí
+
+Hệ thống hiện có hai nguồn khác nhau: GA4 ghi nhận `page_view` và `fusumi_apply_click`; Google Form/Sheet ghi nhận hồ sơ thực nhận. **Click không phải hồ sơ đã nộp.**
+
+## Dữ liệu xuất đầu vào
+
+1. Từ GA4 hoặc báo cáo tổng hợp do bạn tạo, xuất CSV `events.csv` có các cột chính xác: `job_url,event_name,event_count`. Chỉ dùng hai sự kiện `page_view` và `fusumi_apply_click`. Cần bảo đảm `job_url` có sẵn cho cả hai: GA4 page_view mặc định có `page_location` thay vì `job_url`, vì vậy trước khi xuất phải ánh xạ `page_location` sang `job_url` (hoặc tạo report tùy chỉnh). Không khẳng định GA4 đã có sẵn custom dimension cho `job_url`.
+2. Xuất `responses.csv` từ Sheet phản hồi Google Form với cột `URL tin tuyển dụng` (hoặc `job_url`). Các cột thông tin cá nhân nếu có chỉ được đọc trong file nguồn; công cụ không xuất các cột đó ra báo cáo. Nên ưu tiên tạo bản CSV chỉ có URL để giảm xử lý dữ liệu cá nhân.
+3. Chỉ so sánh **cùng một khoảng thời gian** và cùng múi giờ (`Asia/Ho_Chi_Minh`). Bộ tổng hợp không tự lọc thời gian. Xóa bản xuất dữ liệu gốc khỏi máy xử lý sau khi hoàn thành theo chính sách lưu trữ nội bộ.
+
+## Chạy cục bộ
+
+```bash
+python scripts/report_recruitment_funnel.py --events events.csv --responses responses.csv --output funnel-summary.csv
+```
+
+Báo cáo chỉ chứa `job_url,page_views,apply_clicks,applications,click_through_rate`. Tỷ lệ nhấp là `apply_clicks/page_views`, hiển thị dưới dạng số thập phân, ví dụ `0.12` tương đương 12%; không phải tỷ lệ chuyển đổi hồ sơ. `applications` là số **dòng phản hồi**, có thể có hồ sơ trùng nếu người nộp gửi nhiều lần; không tự động coi là ứng viên duy nhất.
+
+## Đọc kết quả
+
+- `page_views`: lượt xem, không phải số người dùng duy nhất.
+- `apply_clicks`: số sự kiện click vào kênh ứng tuyển; một người có thể click nhiều lần.
+- `applications`: số phản hồi Form (theo URL vị trí). Hồ sơ gửi qua email chưa được tính tự động.
+- `click_through_rate`: tỷ lệ click/view để so sánh tương đối; chỉ đáng tin khi `page_view` được ánh xạ đúng URL.
+- Có thể có báo cáo click/response lệch do chặn Analytics, consent, khác múi giờ, email, người quay lại, hoặc URL trống/không hợp lệ.
+
+## Quy tắc an toàn
+
+Không đưa file ứng viên có tên, email, điện thoại, CV vào GitHub hoặc issue. Chỉ commit script, test và tài liệu; không commit CSV dữ liệu thực. Khi cần chia sẻ báo cáo, chỉ sử dụng file tổng hợp đã kiểm tra không chứa PII.
