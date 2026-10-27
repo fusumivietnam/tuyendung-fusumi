@@ -113,6 +113,28 @@ async function inspectPage(browser, path, viewport, label) {
         .filter(element => element.right > width + 1 || element.left < -1)
         .slice(0, 12);
 
+      const scrollCandidates = [...document.querySelectorAll('body, body *')]
+        .map(element => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            className: typeof element.className === 'string' ? element.className.slice(0, 90) : '',
+            display: style.display,
+            visibility: style.visibility,
+            position: style.position,
+            overflowX: style.overflowX,
+            width: Math.round(rect.width),
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+          };
+        })
+        .filter(element => element.scrollWidth > element.clientWidth + 1 || element.right > width + 1)
+        .sort((a,b) => (b.scrollWidth-b.clientWidth)-(a.scrollWidth-a.clientWidth))
+        .slice(0, 16);
+
       const controls = [];
       document.querySelectorAll('.toolbar input,.toolbar select,.summary .clear,.apply .btn,.fusumi-apply-actions .btn').forEach((element) => {
         if (!visible(element)) return;
@@ -148,6 +170,7 @@ async function inspectPage(browser, path, viewport, label) {
         scrollWidth,
         horizontalOverflow: scrollWidth > width + 1,
         offenders,
+        scrollCandidates,
         bounds,
         controls,
         tables,
@@ -157,7 +180,7 @@ async function inspectPage(browser, path, viewport, label) {
     item.checks.layout = layout;
 
     if (layout.horizontalOverflow) {
-      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}. Offenders: ${JSON.stringify(layout.offenders)}`);
+      itemFail(`page horizontally overflows: scrollWidth=${layout.scrollWidth}, viewport=${layout.viewportWidth}. Offenders: ${JSON.stringify(layout.offenders)}; Scroll candidates: ${JSON.stringify(layout.scrollCandidates)}`);
     }
 
     for (const bound of layout.bounds) {
