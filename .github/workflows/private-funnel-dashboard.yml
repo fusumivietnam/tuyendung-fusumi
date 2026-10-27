@@ -1,0 +1,41 @@
+name: Private Recruitment Funnel Dashboard
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 09:30 Vietnam time (02:30 UTC)
+    - cron: '30 2 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    # Explicit opt-in. No secrets are required until enabled by repository owner.
+    if: ${{ vars.FUSUMI_FUNNEL_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install Google authentication dependencies
+        run: python -m pip install --disable-pip-version-check 'google-auth==2.41.1' 'requests==2.32.5'
+      - name: Fetch aggregated GA4 and Sheets statistics
+        env:
+          FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON }}
+          FUSUMI_GA4_PROPERTY_ID: ${{ vars.FUSUMI_GA4_PROPERTY_ID }}
+          FUSUMI_FUNNEL_SHEET_ID: ${{ vars.FUSUMI_FUNNEL_SHEET_ID }}
+          FUSUMI_FUNNEL_SHEET_RANGE: ${{ vars.FUSUMI_FUNNEL_SHEET_RANGE }}
+        run: |
+          python -m scripts.sync_recruitment_funnel \
+            --start-date "$(date -u -d '7 days ago' +%Y-%m-%d)" \
+            --end-date "$(date -u -d 'yesterday' +%Y-%m-%d)" \
+            --output-dir funnel-output
+      - name: Upload aggregate-only dashboard
+        uses: actions/upload-artifact@v7
+        with:
+          name: private-funnel-dashboard
+          path: funnel-output/
+          retention-days: 14
+          if-no-files-found: error
