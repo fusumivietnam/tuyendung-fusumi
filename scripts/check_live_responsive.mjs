@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
+import { runtimeReportJobPath } from './responsive_job_path.mjs';
 
 const SITE = 'https://tuyendung.fusumi.vn';
 const VIEWPORTS = [
@@ -222,7 +223,7 @@ async function inspectPage(browser, path, viewport, label) {
       }
     }
 
-    console.log(`OK responsive: ${label} [${viewport.name}]`);
+    if (item.status === 'pass') console.log(`OK responsive: ${label} [${viewport.name}]`);
     return item;
   } catch (error) {
     if (/429|ERR_TOO_MANY_REQUESTS/i.test(String(error))) {
@@ -260,7 +261,7 @@ try {
     { path: '/p/ung-tuyen.html', label: 'Apply page' },
   ];
 
-  const jobPath = await discoverJobPath(browser);
+  const jobPath = runtimeReportJobPath('live-runtime-report.json', SITE) || await discoverJobPath(browser);
   if (jobPath) {
     targets.push({ path: jobPath, label: 'Live job post' });
   } else {

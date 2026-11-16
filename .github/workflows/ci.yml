@@ -55,6 +55,8 @@ jobs:
           test -f tests/test_private_funnel_sync.py
           test -f .github/workflows/private-funnel-dashboard.yml
           test -f docs/private-funnel-automation.md
+          test -f scripts/responsive_job_path.mjs
+          test -f tests/test_responsive_job_path.mjs
           test -f scripts/report_recruitment_funnel.py
           test -f tests/test_recruitment_funnel.py
           test -f docs/recruitment-funnel-report.md
@@ -93,6 +95,9 @@ jobs:
 
       - name: Validate Node scripts
         run: |
+          node --check scripts/responsive_job_path.mjs
+          node --check scripts/check_live_responsive.mjs
+          node tests/test_responsive_job_path.mjs
           node --check scripts/live_jobs.mjs
           node --check scripts/check_live_authoring.mjs
           node --check scripts/check_live_runtime.mjs
