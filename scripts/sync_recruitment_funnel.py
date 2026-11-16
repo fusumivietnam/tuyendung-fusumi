@@ -8,6 +8,8 @@ import csv
 import json
 import os
 from collections import defaultdict
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from scripts.report_recruitment_funnel import normalize_url, render_dashboard
@@ -44,23 +46,38 @@ def ga4_report(session, property_id, dimension, event_name, start_date, end_date
             for row in data.get("rows", [])]
 
 
-def sheet_counts(session, spreadsheet_id, sheet_range):
+def reporting_window(now=None):
+    """Last seven complete calendar days in Vietnam local time."""
+    today = (now or datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))).astimezone(
+        ZoneInfo("Asia/Ho_Chi_Minh")).date()
+    return (today - timedelta(days=7)).isoformat(), (today - timedelta(days=1)).isoformat()
+
+
+def sheet_counts(session, spreadsheet_id, sheet_range, start_date, end_date):
+    """Read only aggregate columns, fail closed on mismatched reporting periods."""
     from urllib.parse import quote
     path = quote(sheet_range, safe="")
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{path}"
     response = session.get(url, params={"valueRenderOption": "UNFORMATTED_VALUE"}, timeout=45)
     response.raise_for_status()
     values = response.json().get("values", [])
-    if not values or [str(x).strip().lower() for x in values[0][:2]] != ["job_url", "applications"]:
-        raise ValueError("Summary sheet must have headers job_url,applications and NO applicant PII")
+    required = ["period_start", "period_end", "job_url", "applications"]
+    if not values or [str(x).strip().lower() for x in values[0]] != required:
+        raise ValueError("Summary sheet must have exactly period_start,period_end,job_url,applications")
     result = []
     for row in values[1:]:
-        if len(row) < 2:
+        if not row or all(str(value).strip() == "" for value in row):
             continue
-        count = row[1]
+        if len(row) != 4:
+            raise ValueError("Summary row must have exactly four aggregate fields")
+        if str(row[0]).strip() != start_date or str(row[1]).strip() != end_date:
+            raise ValueError("Sheet period does not match GA4 reporting period")
+        count = row[3]
         if isinstance(count, bool) or not str(count).isdigit():
             raise ValueError("applications must be a nonnegative integer")
-        result.append((str(row[0]), int(count)))
+        result.append((str(row[2]), int(count)))
+    if not result:
+        raise ValueError("No aggregate Sheet rows for the requested reporting period")
     return result
 
 
@@ -89,21 +106,26 @@ def combine(page_views, apply_clicks, applications):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--start-date", required=True, help="GA4 start date YYYY-MM-DD")
-    parser.add_argument("--end-date", required=True, help="GA4 end date YYYY-MM-DD")
+    parser.add_argument("--start-date", help="Reporting period start (default: 7 days ago Vietnam time)")
+    parser.add_argument("--end-date", help="Reporting period end (default: yesterday Vietnam time)")
     parser.add_argument("--output-dir", default="funnel-output")
     args = parser.parse_args()
+    default_start, default_end = reporting_window()
+    start_date = args.start_date or default_start
+    end_date = args.end_date or default_end
+    if date.fromisoformat(end_date) < date.fromisoformat(start_date):
+        raise ValueError("Reporting period end must be on or after start")
     credentials = os.environ["FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON"]
     property_id = os.environ["FUSUMI_GA4_PROPERTY_ID"]
     spreadsheet_id = os.environ["FUSUMI_FUNNEL_SHEET_ID"]
-    sheet_range = os.environ.get("FUSUMI_FUNNEL_SHEET_RANGE", "Summary!A:B")
+    sheet_range = os.environ.get("FUSUMI_FUNNEL_SHEET_RANGE") or "Summary!A:D"
     session = google_session(credentials)
     views = ga4_report(session, property_id, "pageLocation", "page_view",
-                       args.start_date, args.end_date)
+                       start_date, end_date)
     # This GA4 event-scoped custom dimension MUST be registered and populated.
     clicks = ga4_report(session, property_id, "customEvent:job_url", "fusumi_apply_click",
-                        args.start_date, args.end_date)
-    responses = sheet_counts(session, spreadsheet_id, sheet_range)
+                        start_date, end_date)
+    responses = sheet_counts(session, spreadsheet_id, sheet_range, start_date, end_date)
     rows = combine(views, clicks, responses)
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)
@@ -114,7 +136,7 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
     (output / "funnel-dashboard.html").write_text(render_dashboard(rows), encoding="utf-8")
-    print(f"Produced {len(rows)} aggregated jobs; no respondent records exported.")
+    print(f"Produced {len(rows)} aggregated jobs for {start_date}..{end_date}; no respondent records exported.")
 
 
 if __name__ == "__main__":
