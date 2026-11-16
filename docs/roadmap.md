@@ -1,4 +1,4 @@
-# Fusumi Careers — Roadmap cập nhật 30/10/2026
+# Fusumi Careers — Roadmap cập nhật 16/11/2026
 
 **Website:** https://tuyendung.fusumi.vn/ · **Repository:** fusumivietnam/tuyendung-fusumi  
 **Mục tiêu:** vận hành Blogger ổn định, chuẩn hóa tuyển dụng và đo hiệu quả mà không lộ dữ liệu cá nhân.
@@ -14,7 +14,7 @@
 | Báo cáo funnel CSV + dashboard HTML offline | ✅ Hoàn thành phần mềm | PR #78–#80; chưa có chứng nhận chạy với số liệu thực |
 | Tự động đồng bộ GA4 + aggregate Sheet hàng tuần | 🟡 Đã triển khai mã nguồn, **chưa bật** | PR #81; job chỉ chạy khi biến FUSUMI_FUNNEL_SYNC_ENABLED=true và đủ quyền tối thiểu |
 | Dashboard số liệu thật và nghiệm thu nghiệp vụ | ⬜ Chưa hoàn thành | Cần custom GA4 dimension, service account, Sheet tổng hợp đúng kỳ |
-| Theo dõi độ ổn định Live Smoke | 🟡 Đang vận hành | 29–30/10 GitHub workflow thất bại do HTTP 429 / INCONCLUSIVE, **chưa xác nhận regression** |
+| Theo dõi độ ổn định Live Smoke | 🟡 Đang vận hành | 14–15/11: HTTP 429 / INCONCLUSIVE; 16/11: Runtime PASS + Responsive PASS. Đây là tính không ổn định của phép đo từ GitHub runner, **không phải bằng chứng regression** |
 
 ## 2. Sprint tiếp theo — Ưu tiên P0: chất lượng production
 
@@ -28,6 +28,11 @@
 - **27/10:** Live Smoke #40545573831, Runtime PASS + Responsive PASS 8/8.
 - **29/10:** #40830231473, Runtime PASS, Responsive INCONCLUSIVE do HTTP 429 trang job desktop.
 - **30/10:** #41015072925, Runtime INCONCLUSIVE và Responsive INCONCLUSIVE do HTTP 429 từ Blogger.
+- **14/11:** #43569710691, Runtime/Responsive INCONCLUSIVE (HTTP 429).
+- **15/11:** #43689472968, Runtime/Responsive INCONCLUSIVE (HTTP 429).
+- **16/11:** #43823918222, **Runtime PASS + Responsive PASS**, gate kiểm thử PASS.
+
+**Nguyên tắc vận hành:** các lượt kiểm tra gặp 429 tiếp tục để workflow ở trạng thái không xanh (chưa đủ bằng chứng), nhưng không tự diễn giải thành lỗi HTML/CSS. Xử lý theo kết quả report, tránh rerun liên tục.
 
 ## 3. Sprint tiếp theo — P1: dữ liệu và báo cáo
 
