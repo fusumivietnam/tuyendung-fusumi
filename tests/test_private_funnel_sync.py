@@ -1,5 +1,24 @@
 import unittest
-from scripts.sync_recruitment_funnel import combine, sheet_counts
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from scripts.sync_recruitment_funnel import combine, reporting_window, sheet_counts
+
+
+class FakeSession:
+    def __init__(self, values):
+        self.values = values
+
+    def get(self, *_args, **_kwargs):
+        values = self.values
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"values": values}
+        return FakeResponse()
 
 
 class PrivateSyncTests(unittest.TestCase):
@@ -10,22 +29,38 @@ class PrivateSyncTests(unittest.TestCase):
         self.assertEqual(rows, [{"job_url": url, "page_views": 100, "apply_clicks": 7,
                                   "applications": 3, "click_through_rate": .07}])
 
-    def test_sheet_rejects_pii_columns_and_requires_aggregate_header(self):
-        class FakeResponse:
-            def raise_for_status(self): pass
-            def json(self): return {"values": [["Họ và tên", "Email"], ["A", "a@example.com"]]}
-        class FakeSession:
-            def get(self, *_args, **_kwargs): return FakeResponse()
-        with self.assertRaises(ValueError):
-            sheet_counts(FakeSession(), "sheet-id", "Summary!A:B")
+    def test_reporting_window_in_vietnam_time(self):
+        now = datetime(2026, 11, 15, 18, 30, tzinfo=ZoneInfo("UTC"))
+        self.assertEqual(reporting_window(now), ("2026-11-09", "2026-11-15"))
 
-    def test_sheet_aggregates_only_url_and_count(self):
-        class FakeResponse:
-            def raise_for_status(self): pass
-            def json(self): return {"values": [["job_url", "applications"], ["https://tuyendung.fusumi.vn/2026/10/job.html", 2]]}
-        class FakeSession:
-            def get(self, *_args, **_kwargs): return FakeResponse()
-        self.assertEqual(sheet_counts(FakeSession(), "sheet-id", "Summary!A:B")[0][1], 2)
+    def test_sheet_rejects_pii_columns(self):
+        session = FakeSession([["Họ và tên", "Email"], ["A", "a@example.com"]])
+        with self.assertRaises(ValueError):
+            sheet_counts(session, "sheet-id", "Summary!A:D", "2026-11-09", "2026-11-15")
+
+    def test_sheet_rejects_mismatched_reporting_period(self):
+        session = FakeSession([
+            ["period_start", "period_end", "job_url", "applications"],
+            ["2026-11-01", "2026-11-15", "https://tuyendung.fusumi.vn/2026/10/job.html", 2],
+        ])
+        with self.assertRaisesRegex(ValueError, "period does not match"):
+            sheet_counts(session, "sheet-id", "Summary!A:D", "2026-11-09", "2026-11-15")
+
+    def test_sheet_aggregates_matching_period(self):
+        session = FakeSession([
+            ["period_start", "period_end", "job_url", "applications"],
+            ["2026-11-09", "2026-11-15", "https://tuyendung.fusumi.vn/2026/10/job.html", 2],
+        ])
+        actual = sheet_counts(session, "sheet-id", "Summary!A:D", "2026-11-09", "2026-11-15")
+        self.assertEqual(actual[0][1], 2)
+
+    def test_sheet_rejects_missing_period_and_extra_columns(self):
+        with self.assertRaises(ValueError):
+            sheet_counts(FakeSession([["period_start", "period_end", "job_url", "applications", "email"]]),
+                         "id", "Summary!A:E", "2026-11-09", "2026-11-15")
+        with self.assertRaisesRegex(ValueError, "No aggregate"):
+            sheet_counts(FakeSession([["period_start", "period_end", "job_url", "applications"]]),
+                         "id", "Summary!A:D", "2026-11-09", "2026-11-15")
 
 
 if __name__ == "__main__":

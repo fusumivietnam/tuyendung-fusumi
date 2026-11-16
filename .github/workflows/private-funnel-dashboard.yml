@@ -28,10 +28,7 @@ jobs:
           FUSUMI_FUNNEL_SHEET_ID: ${{ vars.FUSUMI_FUNNEL_SHEET_ID }}
           FUSUMI_FUNNEL_SHEET_RANGE: ${{ vars.FUSUMI_FUNNEL_SHEET_RANGE }}
         run: |
-          python -m scripts.sync_recruitment_funnel \
-            --start-date "$(date -u -d '7 days ago' +%Y-%m-%d)" \
-            --end-date "$(date -u -d 'yesterday' +%Y-%m-%d)" \
-            --output-dir funnel-output
+          python -m scripts.sync_recruitment_funnel --output-dir funnel-output
       - name: Upload aggregate-only dashboard
         uses: actions/upload-artifact@v7
         with:
