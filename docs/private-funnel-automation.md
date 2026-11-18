@@ -1,13 +1,13 @@
 # Dashboard tuyển dụng tự động (opt-in)
 
-Workflow `.github/workflows/private-funnel-dashboard.yml` chạy dự kiến thứ Hai 09:30 giờ Việt Nam và có thể chạy thủ công. **Mặc định job bị skip**: chỉ bật sau khi hoàn tất quyền truy cập và kiểm tra dữ liệu, không có kết nối GA4/Sheet nào được tự động thiết lập.
+Workflow `.github/workflows/private-funnel-dashboard.yml` chạy dự kiến thứ Hai 09:30 giờ Việt Nam và có thể chạy thủ công. **Mặc định lịch xuất báo cáo bị skip**. Có thể chạy thủ công chế độ `validate` để kiểm tra kết nối mà không xuất dữ liệu, ngay cả khi lịch chưa bật. Repository hiện là public: xuất báo cáo và lưu artifact chỉ được phép trên repository private. Không có kết nối GA4/Sheet nào được tự động thiết lập.
 
 ## Quyền truy cập
 
 1. Trong Google Cloud, tạo service account chuyên dùng chỉ cho báo cáo, bật **Google Analytics Data API** và **Google Sheets API**. Tải khóa JSON và đặt trong GitHub Actions secret `FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON`; **không commit khóa**.
 2. Cấp service account vai trò **Viewer** trên GA4 property Fusumi. Thêm custom event-scoped dimension GA4 có API name `job_url` (truy cập qua Data API `customEvent:job_url`) tương ứng event `fusumi_apply_click`. Xác minh field đã sẵn sàng trước khi chạy; nếu không, API sẽ báo lỗi thay vì tạo số liệu giả.
 3. Tạo **spreadsheet riêng chỉ chứa số liệu tổng hợp**, chỉ chia sẻ spreadsheet này với service account ở quyền Viewer. Tab `Summary` cần có đúng **4 cột** `period_start,period_end,job_url,applications` (theo thứ tự A:D), chỉ chứa URL bài đăng và số hồ sơ đã tổng hợp. Mỗi dòng phải có kỳ báo cáo trùng chính xác với kỳ GA4. Không chia sẻ dữ liệu cá nhân hoặc Sheet Responses gốc. Không chia sẻ Sheet Responses có tên, SĐT, email hoặc CV với service account.
-4. Đặt Repository Variables: `FUSUMI_GA4_PROPERTY_ID` (property số), `FUSUMI_FUNNEL_SHEET_ID`, `FUSUMI_FUNNEL_SHEET_RANGE` (ví dụ `Summary!A:D`). Chỉ khi cấu hình đầy đủ mới đặt `FUSUMI_FUNNEL_SYNC_ENABLED=true`.
+4. Đặt Repository Variables: `FUSUMI_GA4_PROPERTY_ID` (property số), `FUSUMI_FUNNEL_SHEET_ID`, `FUSUMI_FUNNEL_SHEET_RANGE` (ví dụ `Summary!A:D`). Chỉ khi cấu hình đầy đủ, chạy preflight thành công và sử dụng repository private mới đặt `FUSUMI_FUNNEL_SYNC_ENABLED=true`.
 
 ## Về kỳ báo cáo
 
@@ -27,6 +27,14 @@ Khi chạy thủ công, có thể truyền `--start-date YYYY-MM-DD --end-date Y
 
 ## Kết quả và bảo mật
 
-Dashboard HTML + CSV tổng hợp được lưu trong GitHub Actions Artifacts với thời gian giữ **14 ngày**. Người có quyền đọc Actions/artifacts của repository có thể tải xuống; không công bố trên Blogger/GitHub Pages. Không có thông tin cá nhân ứng viên hay khóa JSON được đưa vào báo cáo. Tải và mở HTML ngoại tuyến khi cần.
+Chế độ `validate` không xuất CSV/HTML hay artifact, không in số lượng hồ sơ ra log. Chế độ `export` chỉ được phép trên repository private đã bật đồng bộ. Dashboard HTML + CSV tổng hợp được lưu trong GitHub Actions Artifacts với thời gian giữ **14 ngày**. Người có quyền đọc Actions/artifacts của repository có thể tải xuống; không công bố trên Blogger/GitHub Pages. Không có thông tin cá nhân ứng viên hay khóa JSON được đưa vào báo cáo. Tải và mở HTML ngoại tuyến khi cần.
 
 Workflow gọi API ở runtime và không lưu bản raw API hoặc phản hồi từng ứng viên. Nếu cấu hình hoặc API thiếu quyền, job thất bại rõ ràng. Giữ workflow disabled cho tới khi có quyền hợp lệ.
+
+## Kiểm tra trước khi bật lịch
+
+1. Cấu hình service account/variables theo hướng dẫn trên, chỉ cấp quyền vào spreadsheet tổng hợp riêng.
+2. Vào Actions → Private Recruitment Funnel Dashboard → Run workflow, chọn `mode: validate` trên nhánh `main`. Không bật biến lịch để thực hiện kiểm tra này.
+3. Xác nhận `Preflight PASS`. Nếu kiểm tra thất bại, rà soát quyền API, custom dimension, timezone, kỳ dữ liệu và các trường cấu hình. Log lỗi được giới hạn để không làm lộ nội dung phản hồi API.
+4. Repository public không phải nơi lưu báo cáo KPI nội bộ. Có thể giữ repository code public và chạy xuất dashboard cục bộ bằng script, hoặc thiết lập repository báo cáo private riêng và cấu hình credential tại đó. Không đổi visibility repository hiện hữu nếu chưa được chủ sở hữu đồng ý.
+5. Chỉ bật lịch xuất dữ liệu tại repository private sau khi validate thành công.
