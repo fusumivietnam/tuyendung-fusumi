@@ -104,20 +104,32 @@ def combine(page_views, apply_clicks, applications):
     ]
 
 
+def required_config(env):
+    names = ("FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON", "FUSUMI_GA4_PROPERTY_ID", "FUSUMI_FUNNEL_SHEET_ID")
+    missing = [name for name in names if not env.get(name, "").strip()]
+    if missing:
+        raise ValueError("Missing configuration: " + ", ".join(missing))
+    if not env["FUSUMI_GA4_PROPERTY_ID"].isdigit():
+        raise ValueError("GA4 property ID must be numeric")
+    return {name: env[name] for name in names}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--start-date", help="Reporting period start (default: 7 days ago Vietnam time)")
     parser.add_argument("--end-date", help="Reporting period end (default: yesterday Vietnam time)")
     parser.add_argument("--output-dir", default="funnel-output")
+    parser.add_argument("--validate-only", action="store_true", help="Check sources without exporting data")
     args = parser.parse_args()
     default_start, default_end = reporting_window()
     start_date = args.start_date or default_start
     end_date = args.end_date or default_end
     if date.fromisoformat(end_date) < date.fromisoformat(start_date):
         raise ValueError("Reporting period end must be on or after start")
-    credentials = os.environ["FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON"]
-    property_id = os.environ["FUSUMI_GA4_PROPERTY_ID"]
-    spreadsheet_id = os.environ["FUSUMI_FUNNEL_SHEET_ID"]
+    config = required_config(os.environ)
+    credentials = config["FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON"]
+    property_id = config["FUSUMI_GA4_PROPERTY_ID"]
+    spreadsheet_id = config["FUSUMI_FUNNEL_SHEET_ID"]
     sheet_range = os.environ.get("FUSUMI_FUNNEL_SHEET_RANGE") or "Summary!A:D"
     session = google_session(credentials)
     views = ga4_report(session, property_id, "pageLocation", "page_view",
@@ -127,6 +139,9 @@ def main():
                         start_date, end_date)
     responses = sheet_counts(session, spreadsheet_id, sheet_range, start_date, end_date)
     rows = combine(views, clicks, responses)
+    if args.validate_only:
+        print("Preflight PASS: GA4 and aggregate Sheet queries completed; no report exported.")
+        return
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)
     with (output / "funnel-summary.csv").open("w", encoding="utf-8", newline="") as handle:
@@ -140,4 +155,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        # Do not print API response bodies, identifiers, or credentials to public logs.
+        print("Funnel sync failed. Check source permissions, configuration and period contract.", file=__import__("sys").stderr)
+        raise SystemExit(1) from None
