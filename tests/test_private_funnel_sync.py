@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from scripts.sync_recruitment_funnel import combine, reporting_window, sheet_counts
+from scripts.sync_recruitment_funnel import combine, reporting_window, sheet_counts, required_config
 
 
 class FakeSession:
@@ -28,6 +28,17 @@ class PrivateSyncTests(unittest.TestCase):
                        [(url, 7)], [(url, 3)])
         self.assertEqual(rows, [{"job_url": url, "page_views": 100, "apply_clicks": 7,
                                   "applications": 3, "click_through_rate": .07}])
+
+    def test_required_config_rejects_missing_or_invalid_property(self):
+        with self.assertRaisesRegex(ValueError, "Missing configuration"):
+            required_config({})
+        env = {"FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON": "fixture",
+               "FUSUMI_GA4_PROPERTY_ID": "invalid",
+               "FUSUMI_FUNNEL_SHEET_ID": "fixture"}
+        with self.assertRaisesRegex(ValueError, "numeric"):
+            required_config(env)
+        env["FUSUMI_GA4_PROPERTY_ID"] = "123"
+        self.assertEqual(required_config(env), env)
 
     def test_reporting_window_in_vietnam_time(self):
         now = datetime(2026, 11, 15, 18, 30, tzinfo=ZoneInfo("UTC"))
