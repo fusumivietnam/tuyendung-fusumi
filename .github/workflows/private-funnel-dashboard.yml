@@ -2,6 +2,12 @@ name: Private Recruitment Funnel Dashboard
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Validate sources only, or export report (private repository only)'
+        type: choice
+        options: [validate, export]
+        default: validate
   schedule:
     # Mondays 09:30 Vietnam time (02:30 UTC)
     - cron: '30 2 * * 1'
@@ -12,7 +18,7 @@ permissions:
 jobs:
   refresh:
     # Explicit opt-in. No secrets are required until enabled by repository owner.
-    if: ${{ vars.FUSUMI_FUNNEL_SYNC_ENABLED == 'true' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate') || (github.event.repository.private == true && vars.FUSUMI_FUNNEL_SYNC_ENABLED == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -21,15 +27,25 @@ jobs:
           python-version: '3.12'
       - name: Install Google authentication dependencies
         run: python -m pip install --disable-pip-version-check 'google-auth==2.41.1' 'requests==2.32.5'
-      - name: Fetch aggregated GA4 and Sheets statistics
+      - name: Validate or fetch aggregated GA4 and Sheets statistics
         env:
+          FUNNEL_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'export' }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON }}
           FUSUMI_GA4_PROPERTY_ID: ${{ vars.FUSUMI_GA4_PROPERTY_ID }}
           FUSUMI_FUNNEL_SHEET_ID: ${{ vars.FUSUMI_FUNNEL_SHEET_ID }}
           FUSUMI_FUNNEL_SHEET_RANGE: ${{ vars.FUSUMI_FUNNEL_SHEET_RANGE }}
         run: |
-          python -m scripts.sync_recruitment_funnel --output-dir funnel-output
+          if [ "$FUNNEL_MODE" = 'validate' ]; then
+            python -m scripts.sync_recruitment_funnel --validate-only
+          elif [ "$REPOSITORY_PRIVATE" = 'true' ]; then
+            python -m scripts.sync_recruitment_funnel --output-dir funnel-output
+          else
+            echo 'Report export requires a private repository.' >&2
+            exit 1
+          fi
       - name: Upload aggregate-only dashboard
+        if: ${{ github.event.repository.private == true && (github.event_name == 'schedule' || inputs.mode == 'export') }}
         uses: actions/upload-artifact@v7
         with:
           name: private-funnel-dashboard
