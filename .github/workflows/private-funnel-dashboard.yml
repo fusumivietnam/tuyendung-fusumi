@@ -17,8 +17,11 @@ permissions:
 
 jobs:
   refresh:
-    # Explicit opt-in. No secrets are required until enabled by repository owner.
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate') || (github.event.repository.private == true && vars.FUSUMI_FUNNEL_SYNC_ENABLED == 'true') }}
+    # Never obtain Google credentials in a public repository or from another ref.
+    if: ${{ github.event.repository.private == true && github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.mode == 'validate') || vars.FUSUMI_FUNNEL_SYNC_ENABLED == 'true') }}
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,11 +30,17 @@ jobs:
           python-version: '3.12'
       - name: Install Google authentication dependencies
         run: python -m pip install --disable-pip-version-check 'google-auth==2.41.1' 'requests==2.32.5'
+      - name: Authenticate to Google using WIF
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+          export_environment_variables: true
       - name: Validate or fetch aggregated GA4 and Sheets statistics
         env:
           FUNNEL_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'export' }}
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
-          FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON }}
           FUSUMI_GA4_PROPERTY_ID: ${{ vars.FUSUMI_GA4_PROPERTY_ID }}
           FUSUMI_FUNNEL_SHEET_ID: ${{ vars.FUSUMI_FUNNEL_SHEET_ID }}
           FUSUMI_FUNNEL_SHEET_RANGE: ${{ vars.FUSUMI_FUNNEL_SHEET_RANGE }}
