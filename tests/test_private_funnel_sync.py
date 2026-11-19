@@ -32,13 +32,26 @@ class PrivateSyncTests(unittest.TestCase):
     def test_required_config_rejects_missing_or_invalid_property(self):
         with self.assertRaisesRegex(ValueError, "Missing configuration"):
             required_config({})
-        env = {"FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON": "fixture",
-               "FUSUMI_GA4_PROPERTY_ID": "invalid",
+        env = {"FUSUMI_GA4_PROPERTY_ID": "invalid",
                "FUSUMI_FUNNEL_SHEET_ID": "fixture"}
         with self.assertRaisesRegex(ValueError, "numeric"):
             required_config(env)
         env["FUSUMI_GA4_PROPERTY_ID"] = "123"
         self.assertEqual(required_config(env), env)
+
+    def test_keyless_authentication_contract(self):
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/private-funnel-dashboard.yml").read_text()
+        script = (root / "scripts/sync_recruitment_funnel.py").read_text()
+        self.assertIn("google-github-actions/auth@v3", workflow)
+        self.assertIn("id-token: write", workflow)
+        self.assertIn("github.event.repository.private == true", workflow)
+        self.assertIn("github.ref == 'refs/heads/main'", workflow)
+        self.assertIn("vars.GCP_WIF_PROVIDER", workflow)
+        self.assertIn("vars.GCP_SERVICE_ACCOUNT", workflow)
+        self.assertIn("google.auth.default(scopes=SCOPES)", script)
+        self.assertNotIn("FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON", workflow + script)
 
     def test_reporting_window_in_vietnam_time(self):
         now = datetime(2026, 11, 15, 18, 30, tzinfo=ZoneInfo("UTC"))

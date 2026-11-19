@@ -5,7 +5,6 @@ Only job URL and aggregated counts are fetched. No respondent details or raw dat
 """
 import argparse
 import csv
-import json
 import os
 from collections import defaultdict
 from datetime import date, datetime, timedelta
@@ -19,11 +18,11 @@ SCOPES = ["https://www.googleapis.com/auth/analytics.readonly",
           "https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 
-def google_session(credentials_json):
+def google_session():
+    """Use short-lived Application Default Credentials, including GitHub OIDC."""
+    import google.auth
     from google.auth.transport.requests import AuthorizedSession
-    from google.oauth2 import service_account
-    info = json.loads(credentials_json)
-    creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+    creds, _ = google.auth.default(scopes=SCOPES)
     return AuthorizedSession(creds)
 
 
@@ -105,7 +104,7 @@ def combine(page_views, apply_clicks, applications):
 
 
 def required_config(env):
-    names = ("FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON", "FUSUMI_GA4_PROPERTY_ID", "FUSUMI_FUNNEL_SHEET_ID")
+    names = ("FUSUMI_GA4_PROPERTY_ID", "FUSUMI_FUNNEL_SHEET_ID")
     missing = [name for name in names if not env.get(name, "").strip()]
     if missing:
         raise ValueError("Missing configuration: " + ", ".join(missing))
@@ -127,11 +126,10 @@ def main():
     if date.fromisoformat(end_date) < date.fromisoformat(start_date):
         raise ValueError("Reporting period end must be on or after start")
     config = required_config(os.environ)
-    credentials = config["FUSUMI_GOOGLE_SERVICE_ACCOUNT_JSON"]
     property_id = config["FUSUMI_GA4_PROPERTY_ID"]
     spreadsheet_id = config["FUSUMI_FUNNEL_SHEET_ID"]
     sheet_range = os.environ.get("FUSUMI_FUNNEL_SHEET_RANGE") or "Summary!A:D"
-    session = google_session(credentials)
+    session = google_session()
     views = ga4_report(session, property_id, "pageLocation", "page_view",
                        start_date, end_date)
     # This GA4 event-scoped custom dimension MUST be registered and populated.
